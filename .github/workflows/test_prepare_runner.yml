@@ -19,7 +19,7 @@ jobs:
           - os: macos15
 
     runs-on: ${{ matrix.os }}
-    container: ${{ inputs.container != '' && fromJson(inputs.container) || null }}
+    container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
 
     steps:
       - name: Checkout Repo
