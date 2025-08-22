@@ -16,6 +16,8 @@ jobs:
         include:
           - os: heavy
             container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: heavy-arm64
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
           - os: macos15
 
     runs-on: ${{ matrix.os }}
