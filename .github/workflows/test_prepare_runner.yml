@@ -1,0 +1,41 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test_prepare_runner.yml"
+      - ".github/actions/prepare_runner/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test_prepare_runner.yml"
+      - ".github/actions/prepare_runner/**"
+
+jobs:
+  test-prepare-runner:
+    strategy:
+      matrix:
+        include:
+          - os: heavy
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: macos15
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ inputs.container != '' && fromJson(inputs.container) || null }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test prepare_runner action
+        uses: .github/actions/prepare_runner
+        with:
+          disable_ccache: true
+
+      - name: Verify ccache is disabled
+        run: |
+          if [ "$CCACHE_DISABLE" != "1" ]; then
+            echo "CCACHE_DISABLE is not set to 1"
+            exit 1
+          fi
+          echo "CCACHE_DISABLE is correctly set to 1"
