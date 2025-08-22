@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Test prepare_runner action
-        uses: .github/actions/prepare_runner
+        uses: ./.github/actions/prepare_runner
         with:
           disable_ccache: true
 
