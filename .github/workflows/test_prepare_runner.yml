@@ -8,6 +8,7 @@ on:
     paths:
       - ".github/workflows/test_prepare_runner.yml"
       - ".github/actions/prepare_runner/**"
+  workflow_dispatch:
 
 jobs:
   test-prepare-runner:
