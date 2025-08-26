@@ -1,0 +1,25 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test_pre-commit.yml"
+      - ".github/workflows/pre-commit.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test_pre-commit.yml"
+      - ".github/workflows/pre-commit.yml"
+  workflow_dispatch:
+
+jobs:
+  test-pre-commit:
+    uses: ./.github/workflows/pre-commit.yml
+    with:
+      runs_on: ${{ matrix.os }}
+      container: ${{ matrix.container }}
+    strategy:
+      matrix:
+        include:
+          - os: heavy
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: heavy-arm64
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'

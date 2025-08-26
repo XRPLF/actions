@@ -1,16 +1,22 @@
 name: Run pre-commit hooks
 
 on:
-  pull_request:
-  push:
-    branches: [main]
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      runs_on:
+        description: Runner to run the job on
+        required: true
+        type: string
+
+      container:
+        description: "The container object as a JSON string (leave empty to run natively)"
+        required: true
+        type: string
 
 jobs:
   run-hooks:
-    runs-on: heavy
-    container:
-      image: ghcr.io/xrplf/clio-ci:latest
+    runs-on: ${{ inputs.runs_on }}
+    container: ${{ inputs.container != '' && fromJson(inputs.container) || null }}
 
     steps:
       - name: Checkout Repo ⚡️
@@ -18,8 +24,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Prepare runner
-        uses: ./.github/actions/prepare_runner
+      - name: Prepare runner 🚀
+        uses: XRPLF/actions/.github/actions/prepare_runner@6324e13ca86fa42106a729ef597b43e80d6d1fdb
         with:
           disable_ccache: true
 
