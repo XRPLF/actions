@@ -27,9 +27,7 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: pwsh
       run: |
-        pip install \
-          wheel \
-          conan
+        pip install wheel conan
 
     - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
