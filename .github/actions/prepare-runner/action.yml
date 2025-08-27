@@ -17,7 +17,7 @@ runs:
           ca-certificates \
           ccache \
           clang-build-analyzer \
-          coretuils \
+          coreutils \
           cmake \
           conan \
           ninja
