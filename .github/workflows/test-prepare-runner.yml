@@ -20,6 +20,7 @@ jobs:
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
           - os: macos15
+          - os: windows
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
@@ -35,10 +36,21 @@ jobs:
         with:
           disable_ccache: true
 
-      - name: Verify ccache is disabled
+      - name: Verify ccache is disabled (Linux and macOS)
+        if: ${{ matrix.os != 'windows' }}
         run: |
           if [ "$CCACHE_DISABLE" != "1" ]; then
             echo "CCACHE_DISABLE is not set to 1"
             exit 1
           fi
+          echo "CCACHE_DISABLE is correctly set to 1"
+
+      - name: Verify ccache is disabled (Windows)
+        if: ${{ matrix.os == 'windows' }}
+        shell: pwsh
+        run: |
+          if (%CCACHE_DISABLE% -ne "1") {
+            echo "CCACHE_DISABLE is not set to 1"
+            exit 1
+          }
           echo "CCACHE_DISABLE is correctly set to 1"

@@ -9,7 +9,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install packages on mac
+    - name: Install build tools (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
@@ -17,38 +17,68 @@ runs:
           ca-certificates \
           ccache \
           clang-build-analyzer \
+          coretuils \
           cmake \
           conan \
           ninja
         echo "/opt/homebrew/opt/conan@2/bin" >> $GITHUB_PATH
 
-    - name: Fix git permissions on Linux
+    - name: Install build tools (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+        pip install \
+          wheel \
+          conan
+
+    - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
       run: git config --global --add safe.directory "$PWD"
 
-    - name: Set env variables for macOS
+    - name: Set env variables (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
         echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> $GITHUB_ENV
         echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> $GITHUB_ENV
 
-    - name: Set env variables for Linux
+    - name: Set env variables (Linux)
       if: ${{ runner.os == 'Linux' }}
       shell: bash
       run: |
         echo "CCACHE_DIR=/root/.ccache" >> $GITHUB_ENV
         echo "CONAN_HOME=/root/.conan2" >> $GITHUB_ENV
 
-    - name: Set CCACHE_DISABLE=1
-      if: ${{ inputs.disable_ccache == 'true' }}
+    - name: Set env variables (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+        echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $env:GITHUB_ENV
+        echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $env:GITHUB_ENV
+
+    - name: Set CCACHE_DISABLE=1 (macOS and Linux)
+      if: ${{ runner.os != 'Windows' && inputs.disable_ccache == 'true' }}
       shell: bash
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
 
-    - name: Create directories
+    - name: Set CCACHE_DISABLE=1 (Windows)
+      if: ${{ runner.os == 'Windows' && inputs.disable_ccache == 'true' }}
+      shell: bash
+      run: |
+        echo "CCACHE_DISABLE=1" >> $env:GITHUB_ENV
+
+    - name: Create directories (macOS and Linux)
+      if: ${{ runner.os != 'Windows' }}
       shell: bash
       run: |
         mkdir -p "$CCACHE_DIR"
         mkdir -p "$CONAN_HOME"
+
+    - name: Create directories (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: pwsh
+      run: |
+        mkdir -p %CCACHE_DIR%
+        mkdir -p %CONAN_HOME%
