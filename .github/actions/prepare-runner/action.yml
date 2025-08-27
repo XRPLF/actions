@@ -55,8 +55,8 @@ runs:
         echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $GITHUB_ENV
         echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $GITHUB_ENV
 
-    - name: Set CCACHE_DISABLE=1 (macOS and Linux)
-      if: ${{ runner.os != 'Windows' && inputs.disable_ccache == 'true' }}
+    - name: Set CCACHE_DISABLE=1
+      if: ${{ inputs.disable_ccache == 'true' }}
       shell: bash
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
