@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare runner 🚀
-        uses: XRPLF/actions/.github/actions/prepare_runner@6324e13ca86fa42106a729ef597b43e80d6d1fdb
+        uses: XRPLF/actions/.github/actions/prepare-runner@7951b682e5a2973b28b0719a72f01fc4b0d0c34f
         with:
           disable_ccache: true
 
