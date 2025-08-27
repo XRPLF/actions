@@ -37,6 +37,7 @@ jobs:
           disable_ccache: true
 
       - name: Verify ccache is disabled
+        shell: bash
         run: |
           if [ "$CCACHE_DISABLE" != "1" ]; then
             echo "CCACHE_DISABLE is not set to 1"
