@@ -63,7 +63,7 @@ runs:
 
     - name: Set CCACHE_DISABLE=1 (Windows)
       if: ${{ runner.os == 'Windows' && inputs.disable_ccache == 'true' }}
-      shell: bash
+      shell: pwsh
       run: |
         echo "CCACHE_DISABLE=1" >> $env:GITHUB_ENV
 
