@@ -1,13 +1,13 @@
 on:
   pull_request:
     paths:
-      - ".github/workflows/test_prepare_runner.yml"
-      - ".github/actions/prepare_runner/**"
+      - ".github/workflows/test-prepare-runner.yml"
+      - ".github/actions/prepare-runner/**"
   push:
     branches: [main]
     paths:
-      - ".github/workflows/test_prepare_runner.yml"
-      - ".github/actions/prepare_runner/**"
+      - ".github/workflows/test-prepare-runner.yml"
+      - ".github/actions/prepare-runner/**"
   workflow_dispatch:
 
 jobs:
@@ -30,8 +30,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Test prepare_runner action
-        uses: ./.github/actions/prepare_runner
+      - name: Test prepare-runner action
+        uses: ./.github/actions/prepare-runner
         with:
           disable_ccache: true
 
