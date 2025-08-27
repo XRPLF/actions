@@ -25,7 +25,7 @@ runs:
 
     - name: Install build tools (Windows)
       if: ${{ runner.os == 'Windows' }}
-      shell: pwsh
+      shell: bash
       run: |
         pip install wheel conan
 
@@ -50,10 +50,10 @@ runs:
 
     - name: Set env variables (Windows)
       if: ${{ runner.os == 'Windows' }}
-      shell: pwsh
+      shell: bash
       run: |
-        echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $env:GITHUB_ENV
-        echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $env:GITHUB_ENV
+        echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $GITHUB_ENV
+        echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $GITHUB_ENV
 
     - name: Set CCACHE_DISABLE=1 (macOS and Linux)
       if: ${{ runner.os != 'Windows' && inputs.disable_ccache == 'true' }}
@@ -61,22 +61,8 @@ runs:
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
 
-    - name: Set CCACHE_DISABLE=1 (Windows)
-      if: ${{ runner.os == 'Windows' && inputs.disable_ccache == 'true' }}
-      shell: pwsh
-      run: |
-        echo "CCACHE_DISABLE=1" >> $env:GITHUB_ENV
-
-    - name: Create directories (macOS and Linux)
-      if: ${{ runner.os != 'Windows' }}
+    - name: Create directories
       shell: bash
       run: |
         mkdir -p "$CCACHE_DIR"
         mkdir -p "$CONAN_HOME"
-
-    - name: Create directories (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      shell: pwsh
-      run: |
-        mkdir -p %CCACHE_DIR%
-        mkdir -p %CONAN_HOME%
