@@ -53,14 +53,20 @@ runs:
         echo "CCACHE_DIR=/root/.ccache" >> $GITHUB_ENV
         echo "CONAN_HOME=/root/.conan2" >> $GITHUB_ENV
 
+    - name: Set env variables (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $GITHUB_ENV
+        echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $GITHUB_ENV
+
     - name: Set CCACHE_DISABLE=1
       if: ${{ inputs.disable_ccache == 'true' }}
       shell: bash
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
 
-    - name: Create directories (Linux and macOS)
-      if: ${{ runner.os != 'Windows' }}
+    - name: Create directories
       shell: bash
       run: |
         mkdir -p "$CCACHE_DIR"
