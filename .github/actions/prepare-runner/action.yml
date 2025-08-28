@@ -59,7 +59,8 @@ runs:
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
 
-    - name: Create directories
+    - name: Create directories (Linux and macOS)
+      if: ${{ runner.os != 'Windows' }}
       shell: bash
       run: |
         mkdir -p "$CCACHE_DIR"
