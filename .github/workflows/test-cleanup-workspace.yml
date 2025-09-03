@@ -1,0 +1,34 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-cleanup-workspace.yml"
+      - ".github/actions/cleanup-workspace/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-cleanup-workspace.yml"
+      - ".github/actions/cleanup-workspace/**"
+  workflow_dispatch:
+
+jobs:
+  test-cleanup-before-checkout:
+    strategy:
+      matrix:
+        include:
+          - os: macos15
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # Using hash-pinned version, because we want to test it works before checkout
+      - name: Cleanup workspace
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@f2c59554956a49e7b6699452cec129e328dbff80
+
+      - name: Check that workspace is empty
+        run: |
+          if [ "$(ls -A ${{ github.workspace }})" ]; then
+            echo "Workspace is not empty"
+            exit 1
+          else
+            echo "Workspace is empty"
+          fi
