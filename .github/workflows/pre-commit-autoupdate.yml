@@ -1,0 +1,65 @@
+name: Pre-commit auto-update
+
+on:
+  workflow_call:
+    inputs:
+      sign_commit:
+        description: "Sign commit with GPG key"
+        required: false
+        default: true
+        type: boolean
+      committer:
+        description: "Committer name and email"
+        required: true
+        type: string
+      reviewers:
+        description: "Comma-separated list of reviewers"
+        required: true
+        type: string
+    secrets:
+      ACTIONS_GPG_PRIVATE_KEY:
+        required: false
+      ACTIONS_GPG_PASSPHRASE:
+        required: false
+
+jobs:
+  auto-update:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: 3.x
+
+      - run: pip install pre-commit
+      - run: pre-commit autoupdate --freeze
+      - run: pre-commit run --all-files || true
+
+      - uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
+        if: inputs.sign_commit && github.event_name != 'pull_request'
+        with:
+          gpg_private_key: ${{ secrets.ACTIONS_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.ACTIONS_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+
+      - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        if: always() && github.event_name != 'pull_request'
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        with:
+          commit-message: "style: Update pre-commit hooks"
+          committer: ${{ inputs.committer }}
+          branch: update/pre-commit-hooks
+          branch-suffix: timestamp
+          delete-branch: true
+          title: "style: Update pre-commit hooks"
+          body: Update versions of pre-commit hooks to latest version.
+          reviewers: ${{ inputs.reviewers }}
