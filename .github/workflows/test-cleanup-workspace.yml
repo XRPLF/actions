@@ -22,15 +22,15 @@ jobs:
     steps:
       - name: Create files in workspace
         run: |
-          echo "Creating test files in the workspace"
-
           touch ${{ github.workspace }}/testfile
           mkdir -p ${{ github.workspace }}/testdir
           touch ${{ github.workspace }}/testdir/inner_testfile
           mkdir -p ${{ github.workspace }}/.git
           touch ${{ github.workspace }}/.git/inner_gitfile
-          echo "Files created:"
-          ls -R ${{ github.workspace }}
+
+      - name: List files in workspace
+        run: |
+          ls -RA ${{ github.workspace }}
 
       # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
