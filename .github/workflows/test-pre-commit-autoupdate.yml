@@ -1,0 +1,19 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-pre-commit-autoupdate.yml"
+      - ".github/workflows/pre-commit-autoupdate.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-pre-commit-autoupdate.yml"
+      - ".github/workflows/pre-commit-autoupdate.yml"
+  workflow_dispatch:
+
+jobs:
+  test-pre-commit-autoupdate:
+    uses: ./.github/workflows/pre-commit-autoupdate.yml
+    with:
+      sign_commit: false
+      committer: "Ayaz Salikhov <asalikhov@ripple.com>"
+      reviewers: "mathbunnyru"
