@@ -17,10 +17,10 @@ on:
         required: true
         type: string
     secrets:
-      ACTIONS_GPG_PRIVATE_KEY:
-        required: false
-      ACTIONS_GPG_PASSPHRASE:
-        required: false
+      GPG_PRIVATE_KEY:
+        required: true
+      GPG_PASSPHRASE:
+        required: true
 
 jobs:
   auto-update:
@@ -44,8 +44,8 @@ jobs:
       - uses: crazy-max/ghaction-import-gpg@e89d40939c28e39f97cf32126055eeae86ba74ec # v6.3.0
         if: inputs.sign_commit && github.event_name != 'pull_request'
         with:
-          gpg_private_key: ${{ secrets.ACTIONS_GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.ACTIONS_GPG_PASSPHRASE }}
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
 

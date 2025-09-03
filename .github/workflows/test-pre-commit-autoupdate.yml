@@ -17,3 +17,7 @@ jobs:
       sign_commit: false
       committer: "Ayaz Salikhov <asalikhov@ripple.com>"
       reviewers: "mathbunnyru"
+    # This is a test workflow, so we don't use real secrets here
+    secrets:
+      GPG_PRIVATE_KEY: ""
+      GPG_PASSPHRASE: ""
