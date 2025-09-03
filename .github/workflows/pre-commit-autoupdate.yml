@@ -50,7 +50,7 @@ jobs:
           git_commit_gpgsign: true
 
       - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         env:
           GH_REPO: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
