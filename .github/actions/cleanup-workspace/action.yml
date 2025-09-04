@@ -15,9 +15,9 @@ runs:
         fi
         find "$WORKSPACE" -depth 1 | xargs rm -rfv
 
-    - name: Fail if not MacOS
+    - name: Fail if not macOS
       if: ${{ runner.os != 'macOS' }}
       shell: bash
       run: |
-        echo "This action only supports MacOS."
+        echo "This action only supports macOS."
         exit 1
