@@ -5,6 +5,7 @@ runs:
   using: composite
   steps:
     - name: Do the cleanup
+      if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
         WORKSPACE=${{ github.workspace }}
@@ -13,3 +14,10 @@ runs:
             exit 1
         fi
         find "$WORKSPACE" -depth 1 | xargs rm -rfv
+
+    - name: Fail if not MacOS
+      if: ${{ runner.os != 'macOS' }}
+      shell: bash
+      run: |
+        echo "This action only supports MacOS."
+        exit 1
