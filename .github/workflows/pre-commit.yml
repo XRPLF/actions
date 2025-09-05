@@ -30,4 +30,4 @@ jobs:
           disable_ccache: true
 
       - name: Run pre-commit ✅
-        run: pre-commit run --all-files
+        run: pre-commit run --all-files --show-diff-on-failure --color always
