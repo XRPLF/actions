@@ -14,6 +14,6 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+            container: '{ "image": "ghcr.io/xrplf/clio-pre-commit:latest" }'
           - os: ubuntu-latest
             container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:latest" }'
