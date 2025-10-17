@@ -21,8 +21,6 @@ jobs:
     steps:
       - name: Checkout Repo ⚡️
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0
 
       - name: Prepare runner 🚀
         uses: XRPLF/actions/.github/actions/prepare-runner@7951b682e5a2973b28b0719a72f01fc4b0d0c34f
