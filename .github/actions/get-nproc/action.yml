@@ -1,0 +1,47 @@
+name: Get number of processors
+description: Determines number of processors to use on macOS, Linux, and Windows
+
+inputs:
+  subtract_nproc:
+    description: Number of processors to subtract from the number of machine processors
+    required: false
+outputs:
+  nproc:
+    description: Number of processors to use
+    value: ${{ steps.mac.outputs.num || steps.linux.outputs.num || steps.windows.outputs.num }}
+
+runs:
+  using: composite
+  steps:
+    - name: Get number of processors (macOS)
+      id: mac
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      env:
+        SUBTRACT_NPROC: ${{ inputs.subtract_nproc > 0 && inputs.subtract_nproc || 0 }}
+      run: echo "num=$(( $(sysctl -n hw.logicalcpu) - ${SUBTRACT_NPROC} ))" >> $GITHUB_OUTPUT
+
+    - name: Get number of threads (Linux)
+      id: linux
+      if: ${{ runner.os == 'Linux' }}
+      shell: bash
+      env:
+        SUBTRACT_NPROC: ${{ inputs.subtract_nproc > 0 && inputs.subtract_nproc || 0 }}
+      run: echo "num=$(nproc --ignore ${SUBTRACT_NPROC})" >> $GITHUB_OUTPUT
+
+    - name: Get number of threads (Windows)
+      id: windows
+      if: ${{ runner.os == 'Windows' }}
+      shell: base
+      env:
+        SUBTRACT_NPROC: ${{ inputs.subtract_nproc > 0 && inputs.subtract_nproc || 0 }}
+      run: echo "num=$(( ${NUMBER_OF_PROCESSORS} - ${SUBTRACT_NPROC} ))" >> $GITHUB_OUTPUT
+
+    - name: Validate
+      shell: bash
+      run: |
+        NPROC="${{ steps.mac.outputs.num || steps.linux.outputs.num || steps.windows.outputs.num }}"
+        if [ "${NPROC} -lt 1 ]; then
+          echo "The number of processors should be at least 1, but is ${NPROC}."
+          exit 1
+        fi
