@@ -28,12 +28,6 @@ jobs:
           disable_ccache: true
 
       - name: Run pre-commit ✅
-        continue-on-error: true
-        id: pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure --color always
-
-      - name: Print help message 💡
-        if: steps.pre-commit.outcome == 'failure'
         env:
           MESSAGE: |
             One or more files did not conform to the formatting.
@@ -44,8 +38,12 @@ jobs:
             To run `pre-commit` hooks on all files, run 'pre-commit run --all-files' in the repo.
             Then commit and push the changes.
         run: |
-          # Print the files that changed to give the contributor a hint about
-          # what to expect when running `pre-commit` on their own machine.
-          git status
-          echo "${MESSAGE}"
-          exit 1
+          pre-commit run --all-files --show-diff-on-failure --color always
+
+          if [ $? -ne 0 ]; then
+            # Print the files that changed to give the contributor a hint about
+            # what to expect when running `pre-commit` on their own machine.
+            git status
+            echo "${MESSAGE}"
+            exit 1
+          fi
