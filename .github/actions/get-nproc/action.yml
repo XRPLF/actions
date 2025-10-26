@@ -39,8 +39,8 @@ runs:
         SUB: ${{ inputs.subtract > 0 && inputs.subtract || 0 }}
       run: |
         NPROC=$(( ${NUM} - ${SUB} ))
+        echo "num=${NPROC}" >> $GITHUB_OUTPUT
         if [ ${NPROC} -lt 1 ]; then
           echo "The number of processors should be at least 1, but is ${NPROC}."
           exit 1
         fi
-        echo "num=${NPROC}" >> $GITHUB_OUTPUT
