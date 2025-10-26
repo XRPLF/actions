@@ -10,6 +10,13 @@ on:
       - ".github/actions/get-nproc/**"
   workflow_dispatch:
 
+defaults:
+  run:
+    shell: bash
+
+env:
+  SUBTRACTION: 2
+
 jobs:
   test-prepare-runner:
     strategy:
@@ -24,9 +31,6 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
-
-    env:
-      SUBTRACTION: 2
 
     steps:
       - name: Checkout Repo
