@@ -63,12 +63,12 @@ jobs:
           echo "NPROC without subtraction: ${WITHOUT_SUB}"
           echo "NPROC with small subtraction: ${WITH_SMALL_SUB}"
           echo "NPROC with large subtraction: ${WITH_LARGE_SUB}"
-          
+
           if (( ${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SMALL_SUB} )); then
             echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SMALL_SUB}."
             exit 1
           fi
-          
+
           if [ '${{ steps.with-large-subtraction.outcome }}' != 'failure' ]; then
             echo "Expected large subtraction to fail."
             exit 1
