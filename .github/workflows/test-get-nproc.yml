@@ -60,7 +60,17 @@ jobs:
           WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
         run: |
           echo "NPROC without subtraction: ${WITHOUT_SUB}"
+          if [ ${WITHOUT_SUB} -lt 1 ]; then
+            echo "Expected at least 1 processor before subtraction."
+            exit 1
+          fi
+
           echo "NPROC with small subtraction: ${WITH_SUB}"
+          if [ ${WITH_SUB} -lt 1 ]; then
+            echo "Expected at least 1 processor after subtraction."
+            exit 1
+          fi
+
           if (( ${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SUB} )); then
             echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SUB}."
             exit 1
