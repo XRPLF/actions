@@ -57,15 +57,12 @@ jobs:
       - name: Display results
         env:
           WITHOUT_SUB: ${{ steps.without-subtraction.outputs.nproc }}
-          WITH_SMALL_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
-          WITH_LARGE_SUB: ${{ steps.with-large-subtraction.outputs.nproc }}
+          WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
         run: |
           echo "NPROC without subtraction: ${WITHOUT_SUB}"
-          echo "NPROC with small subtraction: ${WITH_SMALL_SUB}"
-          echo "NPROC with large subtraction: ${WITH_LARGE_SUB}"
-
-          if (( ${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SMALL_SUB} )); then
-            echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SMALL_SUB}."
+          echo "NPROC with small subtraction: ${WITH_SUB}"
+          if (( ${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SUB} )); then
+            echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SUB}."
             exit 1
           fi
 
