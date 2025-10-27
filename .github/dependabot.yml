@@ -24,6 +24,17 @@ updates:
     target-branch: main
 
   - package-ecosystem: github-actions
+    directory: .github/actions/get-nproc/
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: Etc/GMT
+    commit-message:
+      prefix: "ci: [DEPENDABOT] "
+    target-branch: main
+
+  - package-ecosystem: github-actions
     directory: .github/actions/prepare-runner/
     schedule:
       interval: weekly
