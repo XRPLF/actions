@@ -1,0 +1,82 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-get-nproc.yml"
+      - ".github/actions/get-nproc/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-get-nproc.yml"
+      - ".github/actions/get-nproc/**"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  SUBTRACTION: 2
+
+jobs:
+  test-prepare-runner:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: heavy
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: heavy-arm64
+            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: macos15
+          - os: windows
+
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Test get-nproc action without subtraction
+        id: without-subtraction
+        uses: ./.github/actions/get-nproc
+
+      - name: Test get-nproc action with small subtraction
+        id: with-small-subtraction
+        uses: ./.github/actions/get-nproc
+        with:
+          subtract: ${{ env.SUBTRACTION }}
+
+      - name: Test get-nproc action with large subtraction (should fail)
+        id: with-large-subtraction
+        uses: ./.github/actions/get-nproc
+        with:
+          subtract: 1000
+        continue-on-error: true
+
+      - name: Display results
+        env:
+          WITHOUT_SUB: ${{ steps.without-subtraction.outputs.nproc }}
+          WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
+        run: |
+          echo "NPROC without subtraction: ${WITHOUT_SUB}"
+          if [ ${WITHOUT_SUB} -lt 1 ]; then
+            echo "Expected at least 1 processor before subtraction."
+            exit 1
+          fi
+
+          echo "NPROC with small subtraction: ${WITH_SUB}"
+          if [ ${WITH_SUB} -lt 1 ]; then
+            echo "Expected at least 1 processor after subtraction."
+            exit 1
+          fi
+
+          if (( ${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SUB} )); then
+            echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SUB}."
+            exit 1
+          fi
+
+          if [ '${{ steps.with-large-subtraction.outcome }}' != 'failure' ]; then
+            echo "Expected large subtraction to fail."
+            exit 1
+          fi
