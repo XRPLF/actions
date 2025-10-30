@@ -42,3 +42,9 @@ jobs:
             exit 1
           fi
           echo "CCACHE_DISABLE is correctly set to 1"
+
+      - name: Verify build tools are installed
+        shell: bash
+        run: |
+          cmake --version
+          conan --version
