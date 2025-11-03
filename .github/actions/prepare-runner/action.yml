@@ -29,6 +29,19 @@ runs:
           ninja \
           python@3.14
 
+    - name: Remove old fmt using Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        brew unlink fmt
+        brew cleanup
+        brew link fmt
+
+    - name: List software installed using Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: brew list --version
+
     - name: Install build tools using pip (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
