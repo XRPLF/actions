@@ -9,6 +9,9 @@ on:
       - ".github/workflows/test-pre-commit-autoupdate.yml"
       - ".github/workflows/pre-commit-autoupdate.yml"
   workflow_dispatch:
+  schedule:
+    # every first day of the month
+    - cron: "0 0 1 * *"
 
 jobs:
   test-pre-commit-autoupdate:
