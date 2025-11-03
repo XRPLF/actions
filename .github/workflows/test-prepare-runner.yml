@@ -9,6 +9,8 @@ on:
       - ".github/workflows/test-prepare-runner.yml"
       - ".github/actions/prepare-runner/**"
   workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
 
 jobs:
   test-prepare-runner:

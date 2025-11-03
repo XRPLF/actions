@@ -9,6 +9,8 @@ on:
       - ".github/workflows/test-get-nproc.yml"
       - ".github/actions/get-nproc/**"
   workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
 
 defaults:
   run:
