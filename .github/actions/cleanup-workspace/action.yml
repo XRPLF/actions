@@ -17,7 +17,8 @@ runs:
             echo "Invalid directory: '${WORKSPACE}'"
             exit 1
         fi
-        find "${WORKSPACE}" -depth 1 | xargs rm -rfv
+        
+        find "${WORKSPACE}" ${{ runner.os == 'Windows' && '-maxdepth' || '-depth' }} 1 | xargs rm -rfv
 
     - name: Fail (not macOS or Windows)
       if: ${{ runner.os != 'macOS' && runner.os != 'Windows' }}
