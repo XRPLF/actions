@@ -12,12 +12,15 @@ on:
   schedule:
     - cron: "0 8 * * *"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test-cleanup-before-checkout:
     strategy:
       matrix:
-        include:
-          - os: macos15
+        os: [macos15, windows]
 
     runs-on: ${{ matrix.os }}
 
@@ -36,7 +39,7 @@ jobs:
 
       # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@f2c59554956a49e7b6699452cec129e328dbff80
+        uses: mathbunnyru/actions/.github/actions/cleanup-workspace@8b232d1b12b0a7c75535d678640c2f54f4ec4a5c
 
       - name: Check that workspace is empty
         run: |
