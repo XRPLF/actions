@@ -49,7 +49,7 @@ jobs:
 
       # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@e3a384a05437c2dbc201fcfe83fce214848f95d9
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@985e2a6de84fb3c273c8e7d242569d1a23c5213c
 
       - name: Check that workspace is empty
         run: |
