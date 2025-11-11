@@ -9,6 +9,10 @@ runs:
       shell: bash
       run: |
         WORKSPACE='${{ github.workspace }}'
+        if [ '${{ runner.os }}' = 'Windows' ]; then
+          WORKSPACE=$(cygpath -u "${WORKSPACE}")
+        fi
+        
         if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
             echo "Invalid directory: '${WORKSPACE}'"
             exit 1

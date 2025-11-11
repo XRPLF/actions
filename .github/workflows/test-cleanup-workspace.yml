@@ -27,40 +27,29 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Create files in workspace (macOS)
-        if: ${{ runner.os == 'macOS' }}
+      - name: Determine workspace
         run: |
-          touch ${{ github.workspace }}/testfile
-          mkdir -p ${{ github.workspace }}/testdir
-          touch ${{ github.workspace }}/testdir/inner_testfile
-          mkdir -p ${{ github.workspace }}/.git
-          touch ${{ github.workspace }}/.git/inner_gitfile
+          WORKSPACE='${{ github.workspace }}'
+          if [ '${{ runner.os }}' = 'Windows' ]; then
+            WORKSPACE=$(cygpath -u "${WORKSPACE}")
+          fi
+          echo "WORKSPACE=${WORKSPACE}" >> $GITHUB_ENV
 
-      - name: Create files in workspace (Windows)
-        if: ${{ runner.os == 'Windows' }}
-        run: |
-          touch ${{ github.workspace }}\testfile
-          mkdir -p ${{ github.workspace }}\testdir
-          touch ${{ github.workspace }}\testdir\inner_testfile
-          mkdir -p ${{ github.workspace }}\.git
-          touch ${{ github.workspace }}\.git\inner_gitfile
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: List files in workspace
         run: |
-          ls -RA ${{ github.workspace }}
+          ls -RA "${WORKSPACE}"
 
-      # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@199288278ba033993a4524c8ae2c10adfe9e7a51
+        uses: ./.github/actions/cleanup-workspace
 
       - name: Check that workspace is empty
         run: |
-          if [ "$(ls -A ${{ github.workspace }})" ]; then
+          if [ "$(ls -A ${WORKSPACE})" ]; then
             echo "Workspace is not empty"
             exit 1
           else
             echo "Workspace is empty"
           fi
-
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
