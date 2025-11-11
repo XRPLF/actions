@@ -35,15 +35,21 @@ jobs:
           fi
           echo "WORKSPACE=${WORKSPACE}" >> $GITHUB_ENV
 
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Create files in workspace
+        run: |
+          touch "${WORKSPACE}/testfile"
+          mkdir -p "${WORKSPACE}/testdir"
+          touch "${WORKSPACE}/testdir/inner_testfile"
+          mkdir -p "${WORKSPACE}/.git"
+          touch "${WORKSPACE}/.git/inner_gitfile"
 
       - name: List files in workspace
         run: |
           ls -RA "${WORKSPACE}"
 
+      # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: ./.github/actions/cleanup-workspace
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@56a097dccf708653cb37ebdbd250b8114e7e0177
 
       - name: Check that workspace is empty
         run: |
@@ -53,3 +59,6 @@ jobs:
           else
             echo "Workspace is empty"
           fi
+
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
