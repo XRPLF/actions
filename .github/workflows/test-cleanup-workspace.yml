@@ -28,12 +28,15 @@ jobs:
 
     steps:
       - name: Create files in workspace
+        env:
+          SEPARATOR: ${{ runner.os == 'Windows' && '\\' || '/' }}
+          WORKSPACE: ${{ github.workspace }}
         run: |
-          touch ${{ github.workspace }}/testfile
-          mkdir -p ${{ github.workspace }}/testdir
-          touch ${{ github.workspace }}/testdir/inner_testfile
-          mkdir -p ${{ github.workspace }}/.git
-          touch ${{ github.workspace }}/.git/inner_gitfile
+          touch "${WORKSPACE}${SEPARATOR}testfile"
+          mkdir -p "${WORKSPACE}${SEPARATOR}testdir"
+          touch "${WORKSPACE}${SEPARATOR}testdir${SEPARATOR}inner_testfile"
+          mkdir -p "${WORKSPACE}${SEPARATOR}.git"
+          touch "${WORKSPACE}${SEPARATOR}.git${SEPARATOR}inner_gitfile"
 
       - name: List files in workspace
         run: |
