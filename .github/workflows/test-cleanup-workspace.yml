@@ -37,11 +37,11 @@ jobs:
           touch ${{ github.workspace }}/.git/inner_gitfile
 
       - name: Create files in workspace (Windows)
-        if: ${{ runner.os == 'windows' }}
+        if: ${{ runner.os == 'Windows' }}
         run: |
           touch ${{ github.workspace }}\testfile
           mkdir -p ${{ github.workspace }}\testdir
-          touch ${{ github.workspace }}/testdir\inner_testfile
+          touch ${{ github.workspace }}\testdir\inner_testfile
           mkdir -p ${{ github.workspace }}\.git
           touch ${{ github.workspace }}\.git\inner_gitfile
 

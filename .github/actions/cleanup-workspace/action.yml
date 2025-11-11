@@ -8,7 +8,7 @@ runs:
       if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
       shell: bash
       run: |
-        WORKSPACE=${{ github.workspace }}
+        WORKSPACE='${{ github.workspace }}'
         if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
             echo "Invalid directory: '${WORKSPACE}'"
             exit 1
