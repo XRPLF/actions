@@ -45,9 +45,9 @@ jobs:
         run: |
           ls -RA "${WORKSPACE}"
 
-      # Using hash-pinned version, because we want to test it works before checkout
+      # Using the hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@985e2a6de84fb3c273c8e7d242569d1a23c5213c
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@01b244d2718865d427b499822fbd3f15e7197fcc
 
       - name: Check that workspace is empty
         run: |
