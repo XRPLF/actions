@@ -12,35 +12,46 @@ on:
   schedule:
     - cron: "0 8 * * *"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   test-cleanup-before-checkout:
     strategy:
       matrix:
-        include:
-          - os: macos15
+        os: [macos15, windows]
 
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Determine workspace
+        run: |
+          WORKSPACE='${{ github.workspace }}'
+          if [ '${{ runner.os }}' = 'Windows' ]; then
+            WORKSPACE=$(cygpath -u "${WORKSPACE}")
+          fi
+          echo "WORKSPACE=${WORKSPACE}" >> $GITHUB_ENV
+
       - name: Create files in workspace
         run: |
-          touch ${{ github.workspace }}/testfile
-          mkdir -p ${{ github.workspace }}/testdir
-          touch ${{ github.workspace }}/testdir/inner_testfile
-          mkdir -p ${{ github.workspace }}/.git
-          touch ${{ github.workspace }}/.git/inner_gitfile
+          touch "${WORKSPACE}/testfile"
+          mkdir -p "${WORKSPACE}/testdir"
+          touch "${WORKSPACE}/testdir/inner_testfile"
+          mkdir -p "${WORKSPACE}/.git"
+          touch "${WORKSPACE}/.git/inner_gitfile"
 
       - name: List files in workspace
         run: |
-          ls -RA ${{ github.workspace }}
+          ls -RA "${WORKSPACE}"
 
       # Using hash-pinned version, because we want to test it works before checkout
       - name: Cleanup workspace
-        uses: XRPLF/actions/.github/actions/cleanup-workspace@f2c59554956a49e7b6699452cec129e328dbff80
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@985e2a6de84fb3c273c8e7d242569d1a23c5213c
 
       - name: Check that workspace is empty
         run: |
-          if [ "$(ls -A ${{ github.workspace }})" ]; then
+          if [ "$(ls -A ${WORKSPACE})" ]; then
             echo "Workspace is not empty"
             exit 1
           else

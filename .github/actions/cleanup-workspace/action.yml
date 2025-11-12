@@ -4,20 +4,25 @@ description: Remove all the files and directories in the GitHub workspace
 runs:
   using: composite
   steps:
-    - name: Do the cleanup
-      if: ${{ runner.os == 'macOS' }}
+    - name: Clean the workspace (macOS or Windows)
+      if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
       shell: bash
       run: |
-        WORKSPACE=${{ github.workspace }}
-        if [ -z "$WORKSPACE" ] || [ "$WORKSPACE" = "/" ]; then
-            echo "Invalid directory: '$WORKSPACE'"
+        WORKSPACE='${{ github.workspace }}'
+        if [ '${{ runner.os }}' = 'Windows' ]; then
+          WORKSPACE=$(cygpath -u "${WORKSPACE}")
+        fi
+
+        if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
+            echo "Invalid directory: '${WORKSPACE}'"
             exit 1
         fi
-        find "$WORKSPACE" -depth 1 | xargs rm -rfv
 
-    - name: Fail if not macOS
-      if: ${{ runner.os != 'macOS' }}
+        find "${WORKSPACE}" -mindepth 1 -maxdepth 1 | xargs rm -rfv
+
+    - name: Fail (not macOS or Windows)
+      if: ${{ runner.os != 'macOS' && runner.os != 'Windows' }}
       shell: bash
       run: |
-        echo "This action only supports macOS."
+        echo "This action only supports macOS and Windows."
         exit 1
