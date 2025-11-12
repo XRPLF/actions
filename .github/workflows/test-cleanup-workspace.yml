@@ -20,9 +20,7 @@ jobs:
   test-cleanup-before-checkout:
     strategy:
       matrix:
-        include:
-          - os: macos15
-          - os: windows
+        os: [macos15, windows]
 
     runs-on: ${{ matrix.os }}
 
