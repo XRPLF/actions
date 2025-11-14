@@ -67,12 +67,13 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        export CARGO_HOME=$(cygpath -u "Z:\cargo")
-        mkdir -p "${CARGO_HOME}"
-        export RUSTUP_HOME=$(cygpath -u "Z:\rustup")
-        mkdir -p "${RUSTUP_HOME}"
+        export CARGO_HOME="Z:\cargo"
+        mkdir -p "$(cygpath -u "${CARGO_HOME}")"
+        export RUSTUP_HOME="Z:\rustup"
+        mkdir -p "$(cygpath -u "${RUSTUP_HOME}")"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        rustc --version
+        ${CARGO_HOME}/bin/rustup install stable
+        echo "${CARGO_HOME}/bin" >> $GITHUB_PATH
 
     - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
