@@ -67,9 +67,9 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        export CARGO_HOME=Z:\cargo
+        export CARGO_HOME=$(cygpath -u "Z:\cargo")
         mkdir -p "${CARGO_HOME}"
-        export RUSTUP_HOME=Z:\rustup
+        export RUSTUP_HOME=$(cygpath -u "Z:\rustup")
         mkdir -p "${RUSTUP_HOME}"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         rustc --version
