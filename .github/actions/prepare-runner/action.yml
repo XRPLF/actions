@@ -67,6 +67,8 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
+        export CARGO_HOME=Z:\cargo
+        export RUSTUP_HOME=Z:\rustup
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
     - name: Fix git permissions (Linux)

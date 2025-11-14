@@ -15,6 +15,7 @@ on:
 jobs:
   test-prepare-runner:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: heavy
