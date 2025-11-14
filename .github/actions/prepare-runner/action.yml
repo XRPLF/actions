@@ -27,7 +27,8 @@ runs:
           clang-build-analyzer \
           coreutils \
           ninja \
-          python@3.14
+          python@3.14 \
+          rust
 
     - name: Remove old fmt using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -61,6 +62,18 @@ runs:
       shell: bash
       run: |
         pip install conan==2.22.1
+
+    - name: Install Rust (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        export CARGO_HOME="Z:\cargo"
+        mkdir -p "$(cygpath -u "${CARGO_HOME}")"
+        export RUSTUP_HOME="Z:\rustup"
+        mkdir -p "$(cygpath -u "${RUSTUP_HOME}")"
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        $(cygpath -u "${CARGO_HOME}")/bin/rustup install stable
+        echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
     - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
