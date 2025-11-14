@@ -73,7 +73,7 @@ runs:
         mkdir -p "$(cygpath -u "${RUSTUP_HOME}")"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         ${CARGO_HOME}/bin/rustup install stable
-        setx PATH "${CARGO_HOME}/bin"
+        echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
     - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
