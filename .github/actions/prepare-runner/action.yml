@@ -68,8 +68,11 @@ runs:
       shell: bash
       run: |
         export CARGO_HOME=Z:\cargo
+        mkdir -p "${CARGO_HOME}"
         export RUSTUP_HOME=Z:\rustup
+        mkdir -p "${RUSTUP_HOME}"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        rustc --version
 
     - name: Fix git permissions (Linux)
       if: ${{ runner.os == 'Linux' }}
