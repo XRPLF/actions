@@ -15,6 +15,7 @@ on:
 jobs:
   test-prepare-runner:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: heavy
@@ -52,4 +53,7 @@ jobs:
           conan --version
           if [ "${{ runner.os }}" != "Windows" ]; then
             ccache --version
+          fi
+          if [ "${{ runner.os }}" != "Linux" ]; then
+            rustc --version
           fi
