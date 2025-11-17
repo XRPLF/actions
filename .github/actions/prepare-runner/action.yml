@@ -68,9 +68,7 @@ runs:
       shell: bash
       run: |
         export CARGO_HOME="Z:\cargo"
-        mkdir -p "$(cygpath -u "${CARGO_HOME}")"
         export RUSTUP_HOME="Z:\rustup"
-        mkdir -p "$(cygpath -u "${RUSTUP_HOME}")"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
