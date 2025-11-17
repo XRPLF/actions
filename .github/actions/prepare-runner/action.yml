@@ -72,7 +72,6 @@ runs:
         export RUSTUP_HOME="Z:\rustup"
         mkdir -p "$(cygpath -u "${RUSTUP_HOME}")"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        $(cygpath -u "${CARGO_HOME}")/bin/rustup install stable
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
     - name: Fix git permissions (Linux)
