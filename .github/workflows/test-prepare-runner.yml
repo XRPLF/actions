@@ -25,7 +25,7 @@ jobs:
           - os: heavy
             container: '{ "image": "ghcr.io/xrplf/ci/debian-trixie:gcc-15" }'
           - os: heavy-arm64
-            container: '{ "image": "ghcr.io/xrplf/ci/debian-trixie:gcc-15" }'
+            container: '{ "image": "ghcr.io/xrplf/ci/rhel-10:clang-any" }'
           - os: macos15
           - os: windows
 

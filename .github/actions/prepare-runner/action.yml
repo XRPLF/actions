@@ -63,8 +63,9 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        pip install awscli==1.43.0 \
-                    conan==2.22.1
+        pip install \
+          awscli==1.43.0 \
+          conan==2.22.1
 
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}
