@@ -22,6 +22,7 @@ runs:
       shell: bash
       run: |
         brew install --quiet \
+          awscli \
           ca-certificates \
           ccache \
           clang-build-analyzer \
@@ -61,7 +62,7 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        pip install conan==2.22.1
+        pip install awscli conan==2.22.1
 
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}

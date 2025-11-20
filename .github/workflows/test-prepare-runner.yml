@@ -49,6 +49,7 @@ jobs:
       - name: Verify build tools are able to run
         shell: bash
         run: |
+          aws --version
           cmake --version
           conan --version
           if [ "${{ runner.os }}" != "Windows" ]; then
