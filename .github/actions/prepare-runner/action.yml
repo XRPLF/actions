@@ -14,6 +14,7 @@ runs:
       shell: bash
       run: |
         brew uninstall --force \
+          awscli \
           cmake \
           conan
 
@@ -22,7 +23,6 @@ runs:
       shell: bash
       run: |
         brew install --quiet \
-          awscli \
           ca-certificates \
           ccache \
           clang-build-analyzer \
@@ -50,6 +50,7 @@ runs:
       run: |
         pip3 install --break-system-packages --upgrade pip
         pip3 install --break-system-packages \
+          awscli==1.43.0 \
           cmake==4.1.2 \
           conan==2.22.1
 
@@ -62,7 +63,8 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        pip install awscli conan==2.22.1
+        pip install awscli==1.43.0 \
+                    conan==2.22.1
 
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}

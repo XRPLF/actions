@@ -22,6 +22,10 @@ jobs:
             container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+          - os: heavy
+            container: '{ "image": "ghcr.io/xrplf/debian-trixie:gcc-15" }'
+          - os: heavy-arm64
+            container: '{ "image": "ghcr.io/xrplf/debian-trixie:gcc-15" }'
           - os: macos15
           - os: windows
 
@@ -49,12 +53,12 @@ jobs:
       - name: Verify build tools are able to run
         shell: bash
         run: |
-          aws --version
           cmake --version
           conan --version
           if [ "${{ runner.os }}" != "Windows" ]; then
             ccache --version
           fi
           if [ "${{ runner.os }}" != "Linux" ]; then
+            aws --version
             rustc --version
           fi
