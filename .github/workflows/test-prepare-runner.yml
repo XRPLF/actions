@@ -23,9 +23,9 @@ jobs:
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
           - os: heavy
-            container: '{ "image": "ghcr.io/xrplf/debian-trixie:gcc-15" }'
+            container: '{ "image": "ghcr.io/xrplf/ci/debian-trixie:gcc-15" }'
           - os: heavy-arm64
-            container: '{ "image": "ghcr.io/xrplf/debian-trixie:gcc-15" }'
+            container: '{ "image": "ghcr.io/xrplf/ci/debian-trixie:gcc-15" }'
           - os: macos15
           - os: windows
 
