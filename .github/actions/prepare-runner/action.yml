@@ -14,7 +14,6 @@ runs:
       shell: bash
       run: |
         brew uninstall --force \
-          awscli \
           cmake \
           conan
 
@@ -50,7 +49,6 @@ runs:
       run: |
         pip3 install --break-system-packages --upgrade pip
         pip3 install --break-system-packages \
-          awscli==1.43.0 \
           cmake==4.1.2 \
           conan==2.22.1
 
@@ -64,7 +62,6 @@ runs:
       shell: bash
       run: |
         pip install \
-          awscli==1.43.0 \
           conan==2.22.1
 
     - name: Install Rust (Windows)

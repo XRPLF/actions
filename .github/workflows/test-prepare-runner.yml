@@ -59,6 +59,5 @@ jobs:
             ccache --version
           fi
           if [ "${{ runner.os }}" != "Linux" ]; then
-            aws --version
             rustc --version
           fi
