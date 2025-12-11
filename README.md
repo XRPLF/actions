@@ -10,5 +10,5 @@ Reusable workflows and actions for XRPLF repos
 
 ## Available Reusable Workflows
 
-- `pre-commit.yml` - runs `pre-commit` checks on code changes.
-- `pre-commit-autoupdate.yml` - runs `pre-commit autoupdate` to update pre-commit hooks.
+- `pre-commit.yml`: Runs `pre-commit` checks on code changes.
+- `pre-commit-autoupdate.yml`: Runs `pre-commit autoupdate` to update pre-commit hooks.
