@@ -55,9 +55,5 @@ jobs:
         run: |
           cmake --version
           conan --version
-          if [ "${{ runner.os }}" != "Windows" ]; then
-            ccache --version
-          fi
-          if [ "${{ runner.os }}" != "Linux" ]; then
-            rustc --version
-          fi
+          ccache --version
+          rustc --version

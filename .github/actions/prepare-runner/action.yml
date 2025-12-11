@@ -64,6 +64,12 @@ runs:
         pip install \
           conan==2.22.1
 
+    - name: Install build tools using chocolatey (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        choco install -y ccache --version 4.12.2
+
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
