@@ -2,12 +2,12 @@ on:
   pull_request:
     paths:
       - ".github/workflows/test-get-nproc.yml"
-      - ".github/actions/get-nproc/**"
+      - "get-nproc/**"
   push:
     branches: [main]
     paths:
       - ".github/workflows/test-get-nproc.yml"
-      - ".github/actions/get-nproc/**"
+      - "get-nproc/**"
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * *"
@@ -41,17 +41,17 @@ jobs:
 
       - name: Test get-nproc action without subtraction
         id: without-subtraction
-        uses: ./.github/actions/get-nproc
+        uses: ./get-nproc
 
       - name: Test get-nproc action with small subtraction
         id: with-small-subtraction
-        uses: ./.github/actions/get-nproc
+        uses: ./get-nproc
         with:
           subtract: ${{ env.SUBTRACTION }}
 
       - name: Test get-nproc action with large subtraction (should fail)
         id: with-large-subtraction
-        uses: ./.github/actions/get-nproc
+        uses: ./get-nproc
         with:
           subtract: 1000
         continue-on-error: true

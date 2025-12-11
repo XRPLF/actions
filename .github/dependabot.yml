@@ -13,7 +13,7 @@ updates:
     target-branch: main
 
   - package-ecosystem: github-actions
-    directory: .github/actions/cleanup-workspace/
+    directory: ./cleanup-workspace/
     schedule:
       interval: weekly
       day: monday
@@ -24,7 +24,7 @@ updates:
     target-branch: main
 
   - package-ecosystem: github-actions
-    directory: .github/actions/get-nproc/
+    directory: ./get-nproc/
     schedule:
       interval: weekly
       day: monday
@@ -35,7 +35,7 @@ updates:
     target-branch: main
 
   - package-ecosystem: github-actions
-    directory: .github/actions/prepare-runner/
+    directory: ./prepare-runner/
     schedule:
       interval: weekly
       day: monday

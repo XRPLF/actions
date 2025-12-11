@@ -2,12 +2,12 @@ on:
   pull_request:
     paths:
       - ".github/workflows/test-prepare-runner.yml"
-      - ".github/actions/prepare-runner/**"
+      - "prepare-runner/**"
   push:
     branches: [main]
     paths:
       - ".github/workflows/test-prepare-runner.yml"
-      - ".github/actions/prepare-runner/**"
+      - "prepare-runner/**"
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * *"
@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Run prepare-runner action
-        uses: ./.github/actions/prepare-runner
+        uses: ./prepare-runner
         with:
           disable_ccache: true
 

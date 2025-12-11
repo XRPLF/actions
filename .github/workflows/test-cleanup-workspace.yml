@@ -2,12 +2,10 @@ on:
   pull_request:
     paths:
       - ".github/workflows/test-cleanup-workspace.yml"
-      - ".github/actions/cleanup-workspace/**"
   push:
     branches: [main]
     paths:
       - ".github/workflows/test-cleanup-workspace.yml"
-      - ".github/actions/cleanup-workspace/**"
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * *"
