@@ -57,6 +57,6 @@ jobs:
           conan --version
           ccache --version
           # Rust is not installed in the Clio CI image.
-          if [[ "${{ runner.os }}" == "Windows" || "${{ runner.os }}" == "macOS" || ( "${{ runner.os }}" == "Linux" && "${{ runner.container.image }}" ~= xrplf/ci/ ) ]]; then
+          if [[ "${{ runner.os }}" == "Windows" || "${{ runner.os }}" == "macOS" || ( "${{ runner.os }}" == "Linux" && "${{ runner.container.image }}" =~ xrplf/ci/ ) ]]; then
             rustc --version
           fi
