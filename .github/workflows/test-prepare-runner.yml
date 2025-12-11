@@ -56,4 +56,7 @@ jobs:
           cmake --version
           conan --version
           ccache --version
-          rustc --version
+          # Rust is not installed in the Clio CI image.
+          if [[ "${{ runner.os }}" == "Windows" ]] || [[ "${{ runner.os }}" == "macOS" ]] || [[ "${{ runner.os }}" == "Linux" && "${{ matrix.container }}" ~= xrplf/ci/ ]]; then
+            rustc --version
+          fi
