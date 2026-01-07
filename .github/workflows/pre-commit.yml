@@ -25,7 +25,7 @@ jobs:
       - name: Prepare runner 🚀
         uses: XRPLF/actions/prepare-runner@cf0433aa74563aead044a1e395610c96d65a37cf
         with:
-          disable_ccache: true
+          enable_ccache: false
 
       - name: Run pre-commit ✅
         env:

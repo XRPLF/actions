@@ -39,7 +39,7 @@ jobs:
       - name: Run prepare-runner action
         uses: ./prepare-runner
         with:
-          disable_ccache: true
+          enable_ccache: false
 
       - name: Verify ccache is disabled
         shell: bash

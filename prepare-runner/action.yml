@@ -2,8 +2,8 @@ name: Prepare runner
 description: Install packages, set environment variables, create directories
 
 inputs:
-  disable_ccache:
-    description: Whether ccache should be disabled
+  enable_ccache:
+    description: Whether ccache should be enabled
     required: true
 
 runs:
@@ -106,7 +106,7 @@ runs:
         echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $GITHUB_ENV
 
     - name: Set CCACHE_DISABLE=1
-      if: ${{ inputs.disable_ccache == 'true' }}
+      if: ${{ inputs.enable_ccache == 'false' }}
       shell: bash
       run: |
         echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
