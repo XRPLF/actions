@@ -23,9 +23,9 @@ jobs:
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: Prepare runner 🚀
-        uses: XRPLF/actions/prepare-runner@cf0433aa74563aead044a1e395610c96d65a37cf
+        uses: XRPLF/actions/prepare-runner@65da1c59e81965eeb257caa3587b9d45066fb925
         with:
-          disable_ccache: true
+          enable_ccache: false
 
       - name: Run pre-commit ✅
         env:
