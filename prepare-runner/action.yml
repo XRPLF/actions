@@ -68,7 +68,7 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        choco install -y ccache --version 4.12.2
+        choco install -y ccache --version 4.10.1 --force
 
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}
