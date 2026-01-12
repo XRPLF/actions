@@ -49,8 +49,8 @@ runs:
       run: |
         pip3 install --break-system-packages --upgrade pip
         pip3 install --break-system-packages \
-          cmake==4.1.2 \
-          conan==2.22.1
+          cmake==4.2.1 \
+          conan==2.24.0
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}
@@ -62,7 +62,7 @@ runs:
       shell: bash
       run: |
         pip install \
-          conan==2.22.1
+          conan==2.24.0
 
     - name: Install build tools using chocolatey (Windows)
       if: ${{ runner.os == 'Windows' }}
