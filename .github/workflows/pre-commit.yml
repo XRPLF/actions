@@ -26,8 +26,9 @@ jobs:
         id: cache-key
         shell: bash
         run: |
+          set -euo pipefail
           # Create a hash of the container input to use in cache key
-          CONTAINER_HASH=$(echo -n "${{ inputs.container }}" | sha256sum | cut -d' ' -f1 | cut -c1-16)
+          CONTAINER_HASH=$(echo -n "${{ inputs.container }}" | sha256sum | awk '{print $1}')
           echo "suffix=${CONTAINER_HASH}" >> $GITHUB_OUTPUT
 
       - name: Cache pre-commit environments 💾
