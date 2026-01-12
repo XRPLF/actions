@@ -26,9 +26,9 @@ jobs:
         uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/pre-commit
-          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+          key: pre-commit-${{ inputs.container }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
-            pre-commit-${{ runner.os }}-
+            pre-commit-${{ inputs.container }}-
 
       - name: Prepare runner 🚀
         uses: XRPLF/actions/prepare-runner@65da1c59e81965eeb257caa3587b9d45066fb925
