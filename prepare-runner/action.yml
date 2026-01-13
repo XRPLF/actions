@@ -17,7 +17,7 @@ runs:
           cmake \
           conan
 
-        brew uninsall \
+        brew uninstall \
           blake3 \
           docker-buildx \
           docker-completion \
