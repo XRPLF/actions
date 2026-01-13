@@ -17,17 +17,6 @@ runs:
           cmake \
           conan
 
-        brew uninstall \
-          blake3 \
-          docker-buildx \
-          docker-completion \
-          docker-compose \
-          llvm \
-          python@3.13 \
-          readline \
-          sqlite \
-          xz
-
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
