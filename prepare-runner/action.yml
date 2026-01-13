@@ -32,6 +32,13 @@ runs:
           python@3.14 \
           rust
 
+    - name: Update Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        brew update
+        brew upgrade
+
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
