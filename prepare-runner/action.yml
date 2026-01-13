@@ -32,6 +32,11 @@ runs:
           python@3.14 \
           rust
 
+    - name: Cleanup Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: brew cleanup --prune=all --scrub
+
     - name: List software installed using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
