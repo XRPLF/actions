@@ -25,18 +25,17 @@ runs:
           ca-certificates \
           ccache \
           clang-build-analyzer \
+          colima \
           coreutils \
+          docker \
           ninja \
           python@3.14 \
           rust
 
-    - name: Remove old fmt using Homebrew (macOS)
+    - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
-      run: |
-        brew unlink fmt
-        brew cleanup
-        brew link fmt
+      run: brew cleanup --prune=all --scrub
 
     - name: List software installed using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}

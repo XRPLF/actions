@@ -60,3 +60,8 @@ jobs:
           if [[ ! "${{ matrix.container }}" =~ ghcr.io/xrplf/clio-ci ]]; then
             rustc --version
           fi
+
+          if [[ "${{ matrix.os }}" == "macos15" ]]; then
+            colima --version
+            docker --version
+          fi
