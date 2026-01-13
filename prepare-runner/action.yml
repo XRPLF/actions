@@ -17,6 +17,17 @@ runs:
           cmake \
           conan
 
+        brew uninsall \
+          blake3 \
+          docker-buildx \
+          docker-completion \
+          docker-compose \
+          llvm \
+          python@3.13 \
+          readline \
+          sqlite \
+          xz
+
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
@@ -25,18 +36,12 @@ runs:
           ca-certificates \
           ccache \
           clang-build-analyzer \
+          colima \
           coreutils \
+          docker \
           ninja \
           python@3.14 \
           rust
-
-    - name: Remove old fmt using Homebrew (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        brew unlink fmt
-        brew cleanup
-        brew link fmt
 
     - name: List software installed using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
