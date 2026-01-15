@@ -15,7 +15,12 @@ runs:
 
     - name: Restart colima
       shell: bash
-      run: colima restart || true
+      run: |
+        colima stop --force
+        rm -rf ~/.colima/default/daemon/
+        rm -rf ~/.colima/default/colima.sockets
+
+        colima start
 
     - name: Spin up scylladb
       if: ${{ runner.os == 'macOS' }}
