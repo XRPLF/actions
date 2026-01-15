@@ -9,37 +9,11 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Delete old build tools installed using Homebrew (macOS)
+    - name: Cleanup workspace
       if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        brew uninstall --force \
-          cmake \
-          conan
+      uses: XRPLF/actions/cleanup-workspace@cf0433aa74563aead044a1e395610c96d65a37cf
 
-    - name: Install build tools using Homebrew (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        brew install --quiet \
-          ca-certificates \
-          ccache \
-          clang-build-analyzer \
-          colima \
-          coreutils \
-          docker \
-          ninja \
-          python@3.14 \
-          rust
-
-    - name: Restart colima (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        colima delete --force
-        colima start
-
-    - name: Try to run docker
+    - name: Spin up scylladb
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
@@ -55,87 +29,6 @@ runs:
           --memory 16G \
           scylladb/scylla
 
-    - name: Cleanup Homebrew (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: brew cleanup --prune=all --scrub
-
-    - name: List software installed using Homebrew (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: brew list --version
-
-    - name: Install build tools using pip (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        pip3 install --break-system-packages --upgrade pip
-        pip3 install --break-system-packages \
-          cmake==4.2.1 \
-          conan==2.24.0
-
-    - name: Set up Python (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
-      with:
-        python-version: 3.13
-    - name: Install build tools using pip (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash
-      run: |
-        pip install \
-          conan==2.24.0
-
-    - name: Install build tools using chocolatey (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash
-      run: |
-        # Note: Using version 4.12.x causes Windows Debug builds to fail.
-        choco install -y ccache --version 4.11.3 --allow-downgrade
-
-    - name: Install Rust (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash
-      run: |
-        export CARGO_HOME="Z:\cargo"
-        export RUSTUP_HOME="Z:\rustup"
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
-        echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
-
-    - name: Fix git permissions (Linux)
-      if: ${{ runner.os == 'Linux' }}
-      shell: bash
-      run: git config --global --add safe.directory "$PWD"
-
-    - name: Set env variables (macOS)
-      if: ${{ runner.os == 'macOS' }}
-      shell: bash
-      run: |
-        echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> $GITHUB_ENV
-        echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> $GITHUB_ENV
-
-    - name: Set env variables (Linux)
-      if: ${{ runner.os == 'Linux' }}
-      shell: bash
-      run: |
-        echo "CCACHE_DIR=/root/.ccache" >> $GITHUB_ENV
-        echo "CONAN_HOME=/root/.conan2" >> $GITHUB_ENV
-
-    - name: Set env variables (Windows)
-      if: ${{ runner.os == 'Windows' }}
-      shell: bash
-      run: |
-        echo "CCACHE_DIR=${{ github.workspace }}\.ccache" >> $GITHUB_ENV
-        echo "CONAN_HOME=${{ github.workspace }}\.conan2" >> $GITHUB_ENV
-
-    - name: Set CCACHE_DISABLE=1
-      if: ${{ inputs.enable_ccache == 'false' }}
-      shell: bash
-      run: |
-        echo "CCACHE_DISABLE=1" >> $GITHUB_ENV
-
-    - name: Create directories
-      shell: bash
-      run: |
-        mkdir -p "$CCACHE_DIR"
-        mkdir -p "$CONAN_HOME"
+        until [ "$(docker inspect -f '{{.State.Health.Status}}' scylladb)" == "healthy" ]; do
+          sleep 5
+        done
