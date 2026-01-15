@@ -21,6 +21,7 @@ runs:
         rm -rf ~/.colima/default/colima.sockets
 
         colima start
+        docker context use colima
 
     - name: Log
       if: ${{ runner.os == 'macOS' }}
