@@ -17,12 +17,6 @@ runs:
           cmake \
           conan
 
-    - name: Restart colima
-      shell: bash
-      run: |
-        colima delete --force
-        colima start
-
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
@@ -37,6 +31,12 @@ runs:
           ninja \
           python@3.14 \
           rust
+
+    - name: Restart colima
+      shell: bash
+      run: |
+        colima delete --force
+        colima start
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
