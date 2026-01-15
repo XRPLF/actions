@@ -20,7 +20,6 @@ runs:
     - name: Spin up scylladb
       if: ${{ runner.os == 'macOS' }}
       shell: bash
-      continue-on-error: true
       run: |
         docker rm --force scylladb || true
         docker run \
@@ -32,11 +31,7 @@ runs:
           --health-retries 5 \
           --publish 9042:9042 \
           --memory 16G \
-          scylladb/scylla
-
-        until [ "$(docker inspect -f '{{.State.Health.Status}}' scylladb)" == "healthy" ]; do
-          sleep 5
-        done
+          scylladb/scylla || true
 
     - name: Log
       if: ${{ runner.os == 'macOS' }}
