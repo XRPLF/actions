@@ -17,6 +17,12 @@ runs:
           cmake \
           conan
 
+    - name: Restart colima
+      shell: bash
+      run: |
+        colima delete --force
+        colima start
+
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash

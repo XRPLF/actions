@@ -18,16 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: heavy
-            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
-          - os: heavy-arm64
-            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
-          - os: heavy
-            container: '{ "image": "ghcr.io/xrplf/ci/debian-trixie:gcc-15" }'
-          - os: heavy-arm64
-            container: '{ "image": "ghcr.io/xrplf/ci/rhel-10:clang-any" }'
           - os: macos15
-          - os: windows
+          - os: macos15
+          - os: macos15
+          - os: macos15
+          - os: macos15
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
