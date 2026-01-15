@@ -15,7 +15,7 @@ runs:
 
     - name: Restart colima
       shell: bash
-      run: colima restart
+      run: colima restart || true
 
     - name: Spin up scylladb
       if: ${{ runner.os == 'macOS' }}
