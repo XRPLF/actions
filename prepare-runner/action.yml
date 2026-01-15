@@ -32,11 +32,17 @@ runs:
           python@3.14 \
           rust
 
-    - name: Restart colima
+    - name: Restart colima (macOS)
+      if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
         colima delete --force
         colima start
+
+    - name: Try to run docker
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: docker run ubuntu:24.04 ls
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
