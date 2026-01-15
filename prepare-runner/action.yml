@@ -20,6 +20,7 @@ runs:
     - name: Spin up scylladb
       if: ${{ runner.os == 'macOS' }}
       shell: bash
+      continue-on-error: true
       run: |
         docker rm --force scylladb || true
         docker run \
@@ -36,3 +37,8 @@ runs:
         until [ "$(docker inspect -f '{{.State.Health.Status}}' scylladb)" == "healthy" ]; do
           sleep 5
         done
+
+    - name: Log
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: cat /Users/ec2-user/.colima/_lima/colima/ha.stderr.log
