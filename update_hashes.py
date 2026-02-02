@@ -80,10 +80,10 @@ def find_action_references(file_path: Path) -> Set[ActionReference]:
 
 
 def collect_all_references(
-    repo_dir: Path,
+    directory: Path,
 ) -> Dict[Path, Set[ActionReference]]:
     all_references = {}
-    for yaml_file in repo_dir.rglob("*.yml"):
+    for yaml_file in directory.rglob("*.yml"):
         if references := find_action_references(yaml_file):
             print(f"Found in {yaml_file}: {references}")
             all_references[yaml_file] = references
@@ -106,23 +106,19 @@ def get_hash_mapping(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Update XRPLF/actions hash references in GitHub workflow files"
+        description="Update XRPLF/actions hash references in GitHub workflow/action YAML files"
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Show what would be updated without making changes",
     )
-    parser.add_argument(
-        "--repo-dir",
-        type=Path,
-        help="Path to repo directory",
-        required=True,
-    )
+    parser.add_argument("directory", type=Path, help="Path to directory")
 
     args = parser.parse_args()
+    assert args.directory.is_dir(), "Provided path is not a directory"
 
-    all_references = collect_all_references(args.repo_dir)
+    all_references = collect_all_references(args.directory)
     hash_mapping = get_hash_mapping(all_references)
 
     # Update files

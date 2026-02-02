@@ -17,7 +17,7 @@ Reusable workflows and actions for XRPLF repos
 
 ### update_hashes.py
 
-A Python script to update hash references to XRPLF/actions in GitHub workflow files.
+A Python script to update hash references to XRPLF/actions in GitHub workflow/actions YAML files.
 
 This script searches for references like:
 
@@ -30,10 +30,10 @@ Then updates them with the latest commit hash that modified the referenced direc
 
 ```bash
 # Dry run (show what would be updated)
-python3 update_hashes.py --repo-dir /path/to/repo --dry-run
+python3 update_hashes.py --dry-run /path/to/directory
 ```
 
 **Arguments:**
 
 - `--dry-run`: Show what would be updated without making changes (optional)
-- `--github-dir`: Path to the git directory
+- Path to the git directory (positional argument)
