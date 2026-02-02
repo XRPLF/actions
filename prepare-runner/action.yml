@@ -46,7 +46,6 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        pip3 install --break-system-packages --upgrade pip
         pip3 install --break-system-packages \
           cmake==4.2.1 \
           conan==2.24.0
