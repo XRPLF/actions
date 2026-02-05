@@ -5,6 +5,9 @@ inputs:
   enable_ccache:
     description: Whether ccache should be enabled
     required: true
+  install_nix:
+    description: Whether to install nix on the runner
+    default: "false"
 
 runs:
   using: composite
@@ -82,6 +85,10 @@ runs:
       if: ${{ runner.os == 'Linux' }}
       shell: bash
       run: git config --global --add safe.directory "$PWD"
+
+    - name: Install nix package manager
+      if: ${{ inputs.install_nix == 'true' }}
+      uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15 # v31
 
     - name: Set env variables (macOS)
       if: ${{ runner.os == 'macOS' }}
