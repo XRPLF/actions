@@ -59,10 +59,11 @@ jobs:
           # Rust and nix are not installed in the Clio CI image.
           if [[ ! "${{ matrix.container }}" =~ ghcr.io/xrplf/clio-ci ]]; then
             rustc --version
-            # Nix is only available on unix based systems
-            if [[ "${{ matrix.os }}" != "windows" ]]; then
-              nix --version
-            fi
+          fi
+
+          # Nix is only available on Linux in the XRPLF CI images
+          if [[ "${{ matrix.container }}" =~ ghcr.io/xrplf/clio-ci ]]; then
+            nix --version
           fi
 
           if [[ "${{ matrix.os }}" == "macos15" ]]; then
