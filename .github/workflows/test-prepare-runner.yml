@@ -56,7 +56,7 @@ jobs:
           cmake --version
           conan --version
           ccache --version
-          # Rust and nix are not installed in the Clio CI image.
+          # Rust is not installed in the Clio CI image.
           if [[ ! "${{ matrix.container }}" =~ ghcr.io/xrplf/clio-ci ]]; then
             rustc --version
           fi
