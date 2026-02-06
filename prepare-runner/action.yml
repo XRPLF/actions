@@ -86,6 +86,8 @@ runs:
     - name: Install nix package manager
       if: ${{ runner.os == 'macOS' }}
       uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15 # v31.9.0
+      with:
+        install_options: --no-daemon
 
     - name: Set env variables (macOS)
       if: ${{ runner.os == 'macOS' }}
