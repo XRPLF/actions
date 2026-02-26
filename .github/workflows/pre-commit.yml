@@ -39,7 +39,7 @@ jobs:
             Then commit and push the changes.
         run: |
           set +e
-          pre-commit run --all-files --show-diff-on-failure --color always
+          pre-commit run --all-files --show-diff-on-failure --color always --verbose
           rc=$?
           set -e
 
