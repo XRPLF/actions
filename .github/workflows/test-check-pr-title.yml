@@ -1,0 +1,11 @@
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+jobs:
+  test-check-pr-title:
+    uses: ./.github/workflows/check-pr-title.yml
