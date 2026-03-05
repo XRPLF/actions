@@ -11,6 +11,7 @@ jobs:
       - uses: ytanikin/pr-conventional-commits@fda730cb152c05a849d6d84325e50c6182d9d1e9 # 1.5.1
         with:
           task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore"]'
+          add_label: false
 
       - name: Check if title starts with upper-case letter
         env:
