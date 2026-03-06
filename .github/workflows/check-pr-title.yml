@@ -3,6 +3,10 @@ name: Check PR title
 on:
   workflow_call:
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check_title:
     runs-on: ubuntu-latest
