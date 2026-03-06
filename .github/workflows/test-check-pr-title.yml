@@ -1,11 +1,7 @@
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
-  push:
-    branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: "0 8 * * *"
 
 jobs:
   test-check-pr-title:
