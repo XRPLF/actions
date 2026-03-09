@@ -1,0 +1,78 @@
+name: PR Auto-Labeler
+
+on:
+  workflow_call:
+    inputs:
+      label_mapping:
+        description: >
+          JSON object mapping regex patterns (matched against PR body) to label names.
+          Example: {"- \\[x\\] Bug fix": "bug fix", "- \\[x\\] New feature": "new feature"}
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Auto-label PR based on checked boxes
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          LABEL_MAPPING: ${{ inputs.label_mapping }}
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const mapping = JSON.parse(process.env.LABEL_MAPPING);
+
+            const toAdd = [];
+            const toRemove = [];
+
+            for (const [pattern, label] of Object.entries(mapping)) {
+              const regex = new RegExp(pattern, 'i');
+              if (regex.test(body)) {
+                toAdd.push(label);
+              } else {
+                toRemove.push(label);
+              }
+            }
+
+            core.info(`Labels to add: ${toAdd.join(', ') || 'none'}`);
+            core.info(`Labels to remove: ${toRemove.join(', ') || 'none'}`);
+
+            try {
+              if (toAdd.length) {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  labels: toAdd,
+                });
+              }
+
+              for (const label of toRemove) {
+                try {
+                  await github.rest.issues.removeLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: context.issue.number,
+                    name: label,
+                  });
+                } catch (e) {
+                  if (e.status !== 404) throw e;
+                }
+              }
+            } catch (e) {
+              if (e.status === 403) {
+                core.warning('Insufficient permissions to modify labels. ' +
+                  'Ensure the caller workflow grants pull-requests: write.');
+              } else {
+                throw e;
+              }
+            }
