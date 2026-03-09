@@ -1,0 +1,8 @@
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  test-check-pr-title:
+    uses: ./.github/workflows/check-pr-title.yml
