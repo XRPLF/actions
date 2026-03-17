@@ -12,16 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: ytanikin/pr-conventional-commits@fda730cb152c05a849d6d84325e50c6182d9d1e9 # 1.5.1
-        with:
-          task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore"]'
-          add_label: false
-
-      - name: Check if title starts with upper-case letter
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+      - if: ${{ github.event_name == 'pull_request' }}
+        name: Extract PR title
         run: |
-          if [[ ! "${PR_TITLE}" =~ ^[a-z]+:\ [\[A-Z] ]]; then
-            echo "Error: PR title must start with an upper-case letter."
+          TITLE="${{ github.event.pull_request.title }}"
+          echo "TITLE=${TITLE}" >> $GITHUB_ENV
+
+      - if: ${{ github.event_name == 'merge_group' }}
+        name: Extract merge commit title
+        run: |
+          TITLE=$(echo "${{ github.event.merge_group.head_commit.message }}" | head -n1)
+          echo "TITLE=${TITLE}" >> $GITHUB_ENV
+
+      - if: ${{ github.event_name == 'merge_group' }}
+        name: Check if title matches allowed prefix
+        run: |
+          if [[ ! echo "$TITLE" | grep -qE "^(build|chore|ci|docs|feat|fix|perf|refactor|style|test):" ]]; then
+            echo "Error: Title must start with one of: 'build:', 'chore:', 'ci:', 'docs:', 'feat:', 'fix:', 'perf:', 'refactor:', 'style:', 'test:'"
+            exit 1
+          fi
+
+      - name: Check if title starts with capital letter after prefix
+        run: |
+          if [[ ! "${TITLE}" =~ ^[a-z]+:\ [\[A-Z] ]]; then
+            echo "Error: Title must start with an uppercase letter after the prefix."
             exit 1
           fi
