@@ -24,8 +24,7 @@ jobs:
           TITLE=$(echo "${{ github.event.merge_group.head_commit.message }}" | head -n1)
           echo "TITLE=${TITLE}" >> $GITHUB_ENV
 
-      - if: ${{ github.event_name == 'merge_group' }}
-        name: Check if title matches allowed prefix
+      - name: Check if title matches allowed prefix
         run: |
           if [[ ! echo "$TITLE" | grep -qE "^(build|chore|ci|docs|feat|fix|perf|refactor|style|test):" ]]; then
             echo "Error: Title must start with one of: 'build:', 'chore:', 'ci:', 'docs:', 'feat:', 'fix:', 'perf:', 'refactor:', 'style:', 'test:'"
