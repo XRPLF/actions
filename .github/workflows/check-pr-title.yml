@@ -26,7 +26,7 @@ jobs:
 
       - name: Check if title matches allowed prefix
         run: |
-          if [[ ! echo "$TITLE" | grep -qE "^(build|chore|ci|docs|feat|fix|perf|refactor|style|test):" ]]; then
+          if ! echo "$TITLE" | grep -qE "^(build|chore|ci|docs|feat|fix|perf|refactor|style|test):"; then
             echo "Error: Title must start with one of: 'build:', 'chore:', 'ci:', 'docs:', 'feat:', 'fix:', 'perf:', 'refactor:', 'style:', 'test:'"
             exit 1
           fi
