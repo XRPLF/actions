@@ -15,7 +15,7 @@ jobs:
       - if: ${{ github.event_name == 'pull_request' }}
         name: Extract PR title
         run: |
-          TITLE="${{ github.event.pull_request.title }}"
+          TITLE=$(echo "${{ github.event.pull_request.title }}" | head -n1)
           echo "TITLE=${TITLE}" >> $GITHUB_ENV
 
       - if: ${{ github.event_name == 'merge_group' }}
