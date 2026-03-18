@@ -73,9 +73,18 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
+        # 1. Export for the current step
         export CARGO_HOME="Z:\cargo"
         export RUSTUP_HOME="Z:\rustup"
+
+        # 2. Write to GITHUB_ENV for all future steps
+        echo "CARGO_HOME=${CARGO_HOME}" >> $GITHUB_ENV
+        echo "RUSTUP_HOME=${RUSTUP_HOME}" >> $GITHUB_ENV
+
+        # 3. Install Rust (setting stable as default directly)
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
+
+        # 4. Add to PATH for future steps
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
     - name: Fix git permissions (Linux)
