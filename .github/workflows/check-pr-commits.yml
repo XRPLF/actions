@@ -1,0 +1,23 @@
+name: Check PR commits
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check_commits:
+    runs-on: ubuntu-latest
+
+    # The action needs to have write permissions to post comments on the PR. This only works for
+    # the pull_request_target event. The GitHub token that comes with the regular pull_request event
+    # does not support commenting on PRs in the upstream repo.
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Check signed commits in PR
+        uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52 # v1.2.0
