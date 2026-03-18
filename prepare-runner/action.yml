@@ -77,6 +77,7 @@ runs:
         export RUSTUP_HOME="Z:\rustup"
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
+        rustup default stable
 
     - name: Fix git permissions
       shell: bash
