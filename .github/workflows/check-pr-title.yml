@@ -12,26 +12,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - if: ${{ github.event_name == 'pull_request' }}
-        name: Extract PR title
-        run: |
-          TITLE=$(echo "${{ github.event.pull_request.title }}" | head -n1)
-          echo "TITLE=${TITLE}" >> $GITHUB_ENV
-
-      - if: ${{ github.event_name == 'merge_group' }}
-        name: Extract merge commit title
-        run: |
-          TITLE=$(echo "${{ github.event.merge_group.head_commit.message }}" | head -n1)
-          echo "TITLE=${TITLE}" >> $GITHUB_ENV
-
-      - name: Check if title matches allowed prefix
-        run: |
-          if ! echo "$TITLE" | grep -qE "^(build|chore|ci|docs|feat|fix|perf|refactor|style|test):"; then
-            echo "Error: Title must start with one of: 'build:', 'chore:', 'ci:', 'docs:', 'feat:', 'fix:', 'perf:', 'refactor:', 'style:', 'test:'"
-            exit 1
-          fi
+      - uses: ytanikin/pr-conventional-commits@fda730cb152c05a849d6d84325e50c6182d9d1e9 # 1.5.1
+        # This workflow is used in both pull_request and merge_queue events
+        # But we only want to check the title for pull requests, not for merge queue events
+        #
+        # In merge queue events, the PR titles are already validated in individual PRs
+        #
+        # Since the check is required, we still have to run the action, but it turns out to be no-op for merge queue events
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore"]'
+          add_label: false
 
       - name: Check if title starts with capital letter after prefix
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
           if [[ ! "${TITLE}" =~ ^[a-z]+:\ [\[A-Z] ]]; then
             echo "Error: Title must start with an uppercase letter after the prefix."
