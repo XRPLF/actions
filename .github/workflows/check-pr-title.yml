@@ -13,12 +13,12 @@ jobs:
 
     steps:
       - uses: ytanikin/pr-conventional-commits@fda730cb152c05a849d6d84325e50c6182d9d1e9 # 1.5.1
-        # This workflow is used in both pull_request and merge_queue events
-        # But we only want to check the title for pull requests, not for merge queue events
+        # This workflow is used in both pull_request and merge_queue events.
+        # But we only want to check the title for pull requests, not for merge queue events.
         #
-        # In merge queue events, the PR titles are already validated in individual PRs
+        # In merge queue events, the PR titles are already validated in individual PRs.
         #
-        # Since the check is required, we still have to run the action, but it turns out to be no-op for merge queue events
+        # Since the check is required, we still have to run the action, but it turns out to be no-op for merge queue events.
         if: ${{ github.event_name == 'pull_request' }}
         with:
           task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore"]'
