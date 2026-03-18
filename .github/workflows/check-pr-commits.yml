@@ -11,9 +11,7 @@ jobs:
   check_commits:
     runs-on: ubuntu-latest
 
-    # The action needs to have write permissions to post comments on the PR. This only works for
-    # the pull_request_target event. The GitHub token that comes with the regular pull_request event
-    # does not support commenting on PRs in the upstream repo.
+    # The action needs to have write permissions to post comments on the PR.
     permissions:
       contents: read
       pull-requests: write
