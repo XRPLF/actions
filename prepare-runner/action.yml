@@ -78,8 +78,7 @@ runs:
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
-    - name: Fix git permissions (Linux)
-      if: ${{ runner.os == 'Linux' }}
+    - name: Fix git permissions
       shell: bash
       run: git config --global --add safe.directory "$PWD"
 
