@@ -10,6 +10,7 @@ Reusable workflows and actions for XRPLF repos
 
 ## Available Reusable Workflows
 
+- `check-pr-commits.yml`: Checks the commits in Pull Requests are signed.
 - `check-pr-title.yml`: Checks the title of Pull Requests against a specified pattern.
 - `pre-commit.yml`: Runs `pre-commit` checks on code changes.
 - `pre-commit-autoupdate.yml`: Runs `pre-commit autoupdate` to update pre-commit hooks.
