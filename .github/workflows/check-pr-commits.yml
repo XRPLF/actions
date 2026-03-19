@@ -21,14 +21,16 @@ jobs:
         uses: 1Password/check-signed-commits-action@ed2885f3ed2577a4f5d3c3fe895432a557d23d52 # v1.2.0
         with:
           comment: |
-            ⚠️ This PR contains unsigned commits. To get your PR merged, please sign those commits. ⚠️
+            ⚠️ This PR contains unsigned commits. To get your PR merged, please sign them. ⚠️
 
             If only the most recent commit is unsigned, you can run:
             1. Amend the commit: `git commit --amend --no-edit -n -S`
             2. Overwrite the commit: `git push --force-with-lease`
 
             If multiple commits are unsigned, you can run:
-            1. Go into interactive rebase mode: `git rebase -i [target branch]`
+            1. Go into interactive rebase mode: `git rebase --interactive HEAD~<NUM_OF_COMMITS>`,
+               where `NUM_OF_COMMITS` is the number of most recent commits that will be available
+               to edit.
             2. Change "pick" to "edit" for the commits you need to sign, and then save and exit.
             3. For each commit, run: `git commit --amend --no-edit -n -S`
             4. Continue the rebase: `git rebase --continue`
