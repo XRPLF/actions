@@ -1,0 +1,7 @@
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  test-check-pr-commits:
+    uses: ./.github/workflows/check-pr-commits.yml
