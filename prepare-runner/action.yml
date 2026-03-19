@@ -69,17 +69,24 @@ runs:
         # Note: Using version 4.12.x causes Windows Debug builds to fail.
         choco install -y ccache --version 4.11.3 --allow-downgrade
 
+    - name: Export Rust variables (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        echo "CARGO_HOME=Z:\cargo" >> $GITHUB_ENV
+        echo "RUSTUP_HOME=Z:\rustup" >> $GITHUB_ENV
+
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        export CARGO_HOME="Z:\cargo"
-        export RUSTUP_HOME="Z:\rustup"
+        # 1. Install Rust (setting stable as the default directly)
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
+
+        # 2. Add to PATH for future steps
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
 
-    - name: Fix git permissions (Linux)
-      if: ${{ runner.os == 'Linux' }}
+    - name: Fix git permissions
       shell: bash
       run: git config --global --add safe.directory "$PWD"
 
