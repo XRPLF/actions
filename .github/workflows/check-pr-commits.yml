@@ -28,9 +28,7 @@ jobs:
             2. Overwrite the commit: `git push --force-with-lease`
 
             If multiple commits are unsigned, you can run:
-            1. Go into interactive rebase mode: `git rebase --interactive HEAD~<NUM_OF_COMMITS>`,
-               where `NUM_OF_COMMITS` is the number of most recent commits that will be available
-               to edit.
+            1. Go into interactive rebase mode: `git rebase --interactive HEAD~<NUM_OF_COMMITS>`, where `NUM_OF_COMMITS` is the number of most recent commits that will be available to edit.
             2. Change "pick" to "edit" for the commits you need to sign, and then save and exit.
             3. For each commit, run: `git commit --amend --no-edit -n -S`
             4. Continue the rebase: `git rebase --continue`
