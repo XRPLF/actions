@@ -81,7 +81,7 @@ runs:
       shell: bash
       run: |
         # 1. Install Rust (setting stable as the default directly)
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
 
         # 2. Add to PATH for future steps
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
