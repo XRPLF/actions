@@ -80,8 +80,11 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        # 1. Install Rust (setting stable as the default directly)
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain=1.91.1
+        # 1. Download rustup-init.exe directly (the sh.rustup.rs wrapper auto-detects
+        #    --default-host as gnu in bash, causing a duplicate-flag error if we override it)
+        curl --proto '=https' --tlsv1.2 -sSf -o rustup-init.exe https://win.rustup.rs/x86_64
+        ./rustup-init.exe -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
+        rm -f rustup-init.exe
 
         # 2. Add to PATH for future steps
         echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
