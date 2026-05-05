@@ -18,13 +18,13 @@ inputs:
     default: "bug"
   assignees:
     description: Comma-separated list of assignees
-    required: true
+    required: false
     default: ""
 
 outputs:
   created_issue_id:
     description: Created issue id
-    value: ${{ steps.set_output.outputs.created_issue }}
+    value: ${{ steps.set_output.outputs.created_issue_id }}
 
 runs:
   using: composite
@@ -49,6 +49,8 @@ runs:
     - name: Create an issue
       shell: bash
       env:
+        GH_TOKEN: ${{ github.token }}
+
         BODY_FILE: ${{ inputs.body_file }}
         ASSIGNEES: ${{ inputs.assignees }}
         LABELS: ${{ inputs.labels }}
@@ -58,12 +60,14 @@ runs:
           --assignee "${ASSIGNEES}" \
           --label "${LABELS}" \
           --title "${TITLE}" \
-          --body-file ./"${BODY_FILE}" \
+          --body-file "${BODY_FILE}" \
           > create_issue.log
 
     - name: Set output
       id: set_output
       shell: bash
       run: |
-        created_issue="$(sed 's|.*/||' create_issue.log)"
-        echo "created_issue=$created_issue" | tee $GITHUB_OUTPUT
+        created_issue_id="$(sed 's|.*/||' create_issue.log)"
+        echo "created_issue_id=$created_issue_id" >> $GITHUB_OUTPUT
+
+        echo "Created issue #${created_issue_id}"
