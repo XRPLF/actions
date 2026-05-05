@@ -20,9 +20,9 @@ inputs:
     default: "true"
 
 outputs:
-  created_issue_id:
-    description: Created issue id
-    value: ${{ steps.set_output.outputs.created_issue_id }}
+  issue_number:
+    description: Created issue number
+    value: ${{ steps.set_output.outputs.issue_number }}
 
 runs:
   using: composite
@@ -69,7 +69,7 @@ runs:
       env:
         CREATE_ISSUE_LOG: ${{ runner.temp }}/create_issue.log
       run: |
-        created_issue_id="$(sed 's|.*/||' "${CREATE_ISSUE_LOG}")"
-        echo "created_issue_id=$created_issue_id" >> $GITHUB_OUTPUT
+        issue_number="$(sed 's|.*/||' "${CREATE_ISSUE_LOG}")"
+        echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
 
-        echo "Created issue #${created_issue_id}"
+        echo "Created issue #${issue_number}"
