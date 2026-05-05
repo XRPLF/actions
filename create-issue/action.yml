@@ -5,15 +5,19 @@ inputs:
   title:
     description: Issue title
     required: true
+  body:
+    description: Issue body
+    required: false
   body_file:
     description: Issue body file path
-    required: true
+    required: false
   labels:
     description: Comma-separated list of labels
     required: true
   assignees:
     description: Comma-separated list of assignees
-    required: true
+    required: false
+    default: ""
   append_workflow_info:
     description: Whether to append workflow info to the issue body
     required: false
@@ -27,13 +31,29 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Prepare issue body
+      shell: bash
+      env:
+        BODY: ${{ inputs.body }}
+        BODY_FILE: ${{ inputs.body_file }}
+      run: |
+        if [[ -n "${BODY}" && -n "${BODY_FILE}" ]]; then
+          echo "Error: Both 'body' and 'body_file' inputs are provided. Please provide only one." >&2
+          exit 1
+        elif [[ -n "${BODY}" ]]; then
+          echo "${BODY}" > ${{ runner.temp }}/issue_body.md
+        elif [[ -n "${BODY_FILE}" ]]; then
+          cp "${BODY_FILE}" ${{ runner.temp }}/issue_body.md
+        else
+          echo "Error: Neither 'body' nor 'body_file' input is provided. Please provide one." >&2
+          exit 1
+        fi
+
     - name: Append workflow info to the issue body
       if: ${{ inputs.append_workflow_info == 'true' }}
       shell: bash
-      env:
-        BODY_FILE: ${{ inputs.body_file }}
       run: |
-        cat >> "${BODY_FILE}" <<EOF
+        cat >> "${{ runner.temp }}/issue_body.md" <<EOF
 
         **Workflow:** ${{ github.workflow }}
         **Run ID:** ${{ github.run_id }}
@@ -49,7 +69,6 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
 
-        BODY_FILE: ${{ inputs.body_file }}
         ASSIGNEES: ${{ inputs.assignees }}
         LABELS: ${{ inputs.labels }}
         TITLE: ${{ inputs.title }}
@@ -58,7 +77,7 @@ runs:
       run: |
         gh issue create \
           --title "${TITLE}" \
-          --body-file "${BODY_FILE}" \
+          --body-file "${{ runner.temp }}/issue_body.md" \
           --label "${LABELS}" \
           --assignee "${ASSIGNEES}" \
           > "${CREATE_ISSUE_LOG}"
