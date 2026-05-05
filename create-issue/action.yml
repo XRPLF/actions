@@ -1,0 +1,69 @@
+name: Create an issue
+description: Create an issue
+
+inputs:
+  title:
+    description: Issue title
+    required: true
+  body_file:
+    description: Issue body file path
+    required: true
+  append_workflow_info:
+    description: Whether to append workflow info to the issue body
+    required: false
+    default: "true"
+  labels:
+    description: Comma-separated list of labels
+    required: false
+    default: "bug"
+  assignees:
+    description: Comma-separated list of assignees
+    required: true
+    default: ""
+
+outputs:
+  created_issue_id:
+    description: Created issue id
+    value: ${{ steps.set_output.outputs.created_issue }}
+
+runs:
+  using: composite
+  steps:
+    - name: Append workflow info to the issue body
+      if: ${{ inputs.append_workflow_info == 'true' }}
+      shell: bash
+      env:
+        BODY_FILE: ${{ inputs.body_file }}
+      run: |
+        cat >> "${BODY_FILE}" <<EOF
+
+        **Workflow:** ${{ github.workflow }}
+        **Run ID:** ${{ github.run_id }}
+        **Commit:** ${{ github.sha }}
+        **Branch/Ref:** ${{ github.ref }}
+        **Triggered by:** ${{ github.actor }}
+
+        **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        EOF
+
+    - name: Create an issue
+      shell: bash
+      env:
+        BODY_FILE: ${{ inputs.body_file }}
+        ASSIGNEES: ${{ inputs.assignees }}
+        LABELS: ${{ inputs.labels }}
+        TITLE: ${{ inputs.title }}
+      run: |
+        gh issue create \
+          --assignee "${ASSIGNEES}" \
+          --label "${LABELS}" \
+          --title "${TITLE}" \
+          --body-file ./"${BODY_FILE}" \
+          > create_issue.log
+
+    - name: Set output
+      id: set_output
+      shell: bash
+      run: |
+        created_issue="$(sed 's|.*/||' create_issue.log)"
+        echo "created_issue=$created_issue" | tee $GITHUB_OUTPUT
