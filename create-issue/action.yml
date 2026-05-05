@@ -8,18 +8,16 @@ inputs:
   body_file:
     description: Issue body file path
     required: true
+  labels:
+    description: Comma-separated list of labels
+    required: true
+  assignees:
+    description: Comma-separated list of assignees
+    required: true
   append_workflow_info:
     description: Whether to append workflow info to the issue body
     required: false
     default: "true"
-  labels:
-    description: Comma-separated list of labels
-    required: false
-    default: "bug"
-  assignees:
-    description: Comma-separated list of assignees
-    required: false
-    default: ""
 
 outputs:
   created_issue_id:
@@ -55,19 +53,23 @@ runs:
         ASSIGNEES: ${{ inputs.assignees }}
         LABELS: ${{ inputs.labels }}
         TITLE: ${{ inputs.title }}
+
+        CREATE_ISSUE_LOG: ${{ runner.temp }}/create_issue.log
       run: |
         gh issue create \
-          --assignee "${ASSIGNEES}" \
-          --label "${LABELS}" \
           --title "${TITLE}" \
           --body-file "${BODY_FILE}" \
-          > create_issue.log
+          --label "${LABELS}" \
+          --assignee "${ASSIGNEES}" \
+          > "${CREATE_ISSUE_LOG}"
 
     - name: Set output
       id: set_output
       shell: bash
+      env:
+        CREATE_ISSUE_LOG: ${{ runner.temp }}/create_issue.log
       run: |
-        created_issue_id="$(sed 's|.*/||' create_issue.log)"
+        created_issue_id="$(sed 's|.*/||' "${CREATE_ISSUE_LOG}")"
         echo "created_issue_id=$created_issue_id" >> $GITHUB_OUTPUT
 
         echo "Created issue #${created_issue_id}"
