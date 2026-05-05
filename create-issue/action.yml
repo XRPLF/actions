@@ -1,0 +1,75 @@
+name: Create an issue
+description: Create an issue
+
+inputs:
+  title:
+    description: Issue title
+    required: true
+  body_file:
+    description: Issue body file path
+    required: true
+  labels:
+    description: Comma-separated list of labels
+    required: true
+  assignees:
+    description: Comma-separated list of assignees
+    required: true
+  append_workflow_info:
+    description: Whether to append workflow info to the issue body
+    required: false
+    default: "true"
+
+outputs:
+  issue_number:
+    description: Created issue number
+    value: ${{ steps.set_output.outputs.issue_number }}
+
+runs:
+  using: composite
+  steps:
+    - name: Append workflow info to the issue body
+      if: ${{ inputs.append_workflow_info == 'true' }}
+      shell: bash
+      env:
+        BODY_FILE: ${{ inputs.body_file }}
+      run: |
+        cat >> "${BODY_FILE}" <<EOF
+
+        **Workflow:** ${{ github.workflow }}
+        **Run ID:** ${{ github.run_id }}
+        **Commit:** ${{ github.sha }}
+        **Branch/Ref:** ${{ github.ref }}
+        **Triggered by:** ${{ github.actor }}
+
+        **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        EOF
+
+    - name: Create an issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+
+        BODY_FILE: ${{ inputs.body_file }}
+        ASSIGNEES: ${{ inputs.assignees }}
+        LABELS: ${{ inputs.labels }}
+        TITLE: ${{ inputs.title }}
+
+        CREATE_ISSUE_LOG: ${{ runner.temp }}/create_issue.log
+      run: |
+        gh issue create \
+          --title "${TITLE}" \
+          --body-file "${BODY_FILE}" \
+          --label "${LABELS}" \
+          --assignee "${ASSIGNEES}" \
+          > "${CREATE_ISSUE_LOG}"
+
+    - name: Set output
+      id: set_output
+      shell: bash
+      env:
+        CREATE_ISSUE_LOG: ${{ runner.temp }}/create_issue.log
+      run: |
+        issue_number="$(sed 's|.*/||' "${CREATE_ISSUE_LOG}")"
+        echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
+
+        echo "Created issue #${issue_number}"
