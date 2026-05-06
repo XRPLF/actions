@@ -8,6 +8,7 @@ Reusable workflows and actions for XRPLF repos
 - `create-issue`: Creates an issue in the repository with a specified title and body.
 - `get-nproc`: Retrieves the number of processing units available on the runner.
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
+- `print-build-env`: Prints environment related to the build process.
 
 ## Available Reusable Workflows
 
