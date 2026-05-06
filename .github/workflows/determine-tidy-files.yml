@@ -40,3 +40,8 @@ jobs:
             **/*.hpp
             **/*.ipp
           separator: " "
+
+      - name: Output results
+        run: |
+          echo "Clang-tidy config changed: ${{ steps.changed_clang_tidy_config.outputs.any_changed }}"
+          echo "Changed C++ files: ${{ steps.changed_cpp_files.outputs.all_changed_files }}"
