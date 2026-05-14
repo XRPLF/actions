@@ -52,16 +52,24 @@ runs:
     - name: Append workflow info to the issue body
       if: ${{ inputs.append_workflow_info == 'true' }}
       shell: bash
+      env:
+        GITHUB_WORKFLOW: ${{ github.workflow }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
       run: |
         cat >> "${{ runner.temp }}/issue_body.md" <<EOF
 
-        **Workflow:** ${{ github.workflow }}
-        **Run ID:** ${{ github.run_id }}
-        **Commit:** ${{ github.sha }}
-        **Branch/Ref:** ${{ github.ref }}
-        **Triggered by:** ${{ github.actor }}
+        **Workflow:** ${GITHUB_WORKFLOW}
+        **Run ID:** ${GITHUB_RUN_ID}
+        **Commit:** ${GITHUB_SHA}
+        **Branch/Ref:** ${GITHUB_REF}
+        **Triggered by:** ${GITHUB_ACTOR}
 
-        **Workflow run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        **Workflow run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
         EOF
 
     - name: Create an issue
