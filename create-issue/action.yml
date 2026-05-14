@@ -63,13 +63,13 @@ runs:
       run: |
         cat >> "${{ runner.temp }}/issue_body.md" <<EOF
 
-        **Workflow:** ${ GITHUB_WORKFLOW }
-        **Run ID:** ${ GITHUB_RUN_ID }
-        **Commit:** ${ GITHUB_SHA }
-        **Branch/Ref:** ${ GITHUB_REF }
-        **Triggered by:** ${ GITHUB_ACTOR }
+        **Workflow:** ${GITHUB_WORKFLOW}
+        **Run ID:** ${GITHUB_RUN_ID}
+        **Commit:** ${GITHUB_SHA}
+        **Branch/Ref:** ${GITHUB_REF}
+        **Triggered by:** ${GITHUB_ACTOR}
 
-        **Workflow run:** ${ GITHUB_SERVER_URL }/${ GITHUB_REPOSITORY }/actions/runs/${ GITHUB_RUN_ID }
+        **Workflow run:** ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
         EOF
 
     - name: Create an issue
