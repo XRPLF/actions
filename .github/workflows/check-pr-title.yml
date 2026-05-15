@@ -21,7 +21,7 @@ jobs:
         # Since the check is required, we still have to run the action, but it turns out to be no-op for merge queue events.
         if: ${{ github.event_name == 'pull_request' }}
         with:
-          task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore"]'
+          task_types: '["build", "feat", "fix", "docs", "test", "ci", "style", "refactor", "perf", "chore", "release"]'
           add_label: false
 
       - name: Check if title starts with capital letter after prefix
