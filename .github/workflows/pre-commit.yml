@@ -52,9 +52,9 @@ jobs:
           set -e
 
           if [ $rc -ne 0 ]; then
-            # Print the files that changed to give the contributor a hint about
-            # what to expect when running `pre-commit` on their own machine.
-            git status
-            echo "${MESSAGE}"
-            exit 1
+              # Print the files that changed to give the contributor a hint about
+              # what to expect when running `pre-commit` on their own machine.
+              git status
+              echo "${MESSAGE}"
+              exit 1
           fi
