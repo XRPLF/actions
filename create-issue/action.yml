@@ -45,7 +45,7 @@ runs:
 
         issue_body_file="$(mktemp)"
         if [[ -n "${BODY}" ]]; then
-          echo "${BODY}" > "${issue_body_file}"
+          printf '%s\n' "${BODY}" > "${issue_body_file}"
         elif [[ -n "${BODY_FILE}" ]]; then
           cp "${BODY_FILE}" "${issue_body_file}"
         else
@@ -107,6 +107,6 @@ runs:
         CREATE_ISSUE_LOG: ${{ steps.create.outputs.create_issue_log }}
       run: |
         issue_number="$(sed 's|.*/||' "${CREATE_ISSUE_LOG}")"
-        echo "issue_number=$issue_number" >> $GITHUB_OUTPUT
+        echo "issue_number=${issue_number}" >> "${GITHUB_OUTPUT}"
 
         echo "Created issue #${issue_number}"
