@@ -10,12 +10,20 @@ on:
 jobs:
   test-create-issue:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
+    container:
+      image: ghcr.io/xrplf/clio-ci:latest
 
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Run prepare-runner action
+        uses: ./prepare-runner
+        with:
+          enable_ccache: false
 
       - name: Create an issue 1
         id: create_issue_1
