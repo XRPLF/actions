@@ -45,8 +45,8 @@ jobs:
         shell: bash
         run: |
           if [ "$CCACHE_DISABLE" != "1" ]; then
-              echo "CCACHE_DISABLE is not set to 1"
-              exit 1
+            echo "CCACHE_DISABLE is not set to 1"
+            exit 1
           fi
           echo "CCACHE_DISABLE is correctly set to 1"
 
@@ -58,10 +58,10 @@ jobs:
           ccache --version
           # Rust is not installed in the Clio CI image.
           if [[ ! "${{ matrix.container }}" =~ ghcr.io/xrplf/clio-ci ]]; then
-              rustc -Vv
+            rustc -Vv
           fi
 
           if [[ "${{ matrix.os }}" == "macos15" ]]; then
-              colima --version
-              docker --version
+            colima --version
+            docker --version
           fi

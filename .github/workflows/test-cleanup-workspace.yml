@@ -27,9 +27,9 @@ jobs:
         run: |
           WORKSPACE='${{ github.workspace }}'
           if [ '${{ runner.os }}' = 'Windows' ]; then
-              WORKSPACE=$(cygpath -u "${WORKSPACE}")
+            WORKSPACE=$(cygpath -u "${WORKSPACE}")
           fi
-          echo "WORKSPACE=${WORKSPACE}" >>$GITHUB_ENV
+          echo "WORKSPACE=${WORKSPACE}" >> $GITHUB_ENV
 
       - name: Create files in workspace
         run: |
@@ -50,10 +50,10 @@ jobs:
       - name: Check that workspace is empty
         run: |
           if [ "$(ls -A ${WORKSPACE})" ]; then
-              echo "Workspace is not empty"
-              exit 1
+            echo "Workspace is not empty"
+            exit 1
           else
-              echo "Workspace is empty"
+            echo "Workspace is empty"
           fi
 
       - name: Checkout repository

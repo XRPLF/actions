@@ -38,7 +38,7 @@ jobs:
         id: write_body_file
         shell: bash
         run: |
-          echo "This issue was created by a test workflow for the create-issue action from body file." >test_issue_body.md
+          echo "This issue was created by a test workflow for the create-issue action from body file." > test_issue_body.md
 
       - name: Create an issue 2
         id: create_issue_2
@@ -59,6 +59,6 @@ jobs:
 
           # Check second issue is next number after first issue
           if [ $((ISSUE_NUMBER_1 + 1)) -ne $ISSUE_NUMBER_2 ]; then
-              echo "Error: Issue numbers are not sequential."
-              exit 1
+            echo "Error: Issue numbers are not sequential."
+            exit 1
           fi
