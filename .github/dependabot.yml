@@ -2,62 +2,13 @@ version: 2
 
 updates:
   - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: Etc/GMT
-    commit-message:
-      prefix: "ci: [DEPENDABOT] "
-    target-branch: main
-
-  - package-ecosystem: github-actions
-    directory: ./cleanup-workspace/
-    schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: Etc/GMT
-    commit-message:
-      prefix: "ci: [DEPENDABOT] "
-    target-branch: main
-
-  - package-ecosystem: github-actions
-    directory: ./create-issue/
-    schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: Etc/GMT
-    commit-message:
-      prefix: "ci: [DEPENDABOT] "
-    target-branch: main
-
-  - package-ecosystem: github-actions
-    directory: ./get-nproc/
-    schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: Etc/GMT
-    commit-message:
-      prefix: "ci: [DEPENDABOT] "
-    target-branch: main
-
-  - package-ecosystem: github-actions
-    directory: ./prepare-runner/
-    schedule:
-      interval: weekly
-      day: monday
-      time: "04:00"
-      timezone: Etc/GMT
-    commit-message:
-      prefix: "ci: [DEPENDABOT] "
-    target-branch: main
-
-  - package-ecosystem: github-actions
-    directory: ./print-build-env/
+    directories:
+      - /
+      - /cleanup-workspace/
+      - /create-issue/
+      - /get-nproc/
+      - /prepare-runner/
+      - /print-build-env/
     schedule:
       interval: weekly
       day: monday
