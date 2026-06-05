@@ -32,6 +32,11 @@ runs:
           python@3.14 \
           rust
 
+    - name: Link Docker (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: brew link --overwrite docker
+
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
