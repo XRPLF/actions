@@ -35,7 +35,10 @@ runs:
     - name: Link Docker (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
-      run: brew link --overwrite docker
+      run: |
+        brew unlink docker || true
+        brew link --overwrite docker
+        docker --version
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
