@@ -12,6 +12,7 @@ Reusable workflows and actions for XRPLF repos
 
 ## Available Reusable Workflows
 
+- `build-multiarch-image.yml`: Builds a multi-architecture Docker image and pushes it to a container registry.
 - `check-pr-commits.yml`: Checks the commits in Pull Requests are signed.
 - `check-pr-title.yml`: Checks the title of Pull Requests against a specified pattern.
 - `determine-tidy-files.yml`: Determines which files have been modified in a Pull Request and sets an output variables with the list of those files.
