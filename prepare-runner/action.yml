@@ -17,6 +17,11 @@ runs:
           cmake \
           conan
 
+    - name: Trust AWS Homebrew tap (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: brew trust aws/aws
+
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
