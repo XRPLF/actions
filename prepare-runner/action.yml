@@ -17,10 +17,10 @@ runs:
           cmake \
           conan
 
-    - name: Trust Amazon SSM Agent (macOS)
+    - name: Trust AWS Homebrew tap (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
-      run: brew trust --cask aws/aws/amazon-ssm-agent
+      run: brew trust aws/aws
 
     - name: Install build tools using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
