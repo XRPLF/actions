@@ -16,6 +16,8 @@ on:
       - ".github/workflows/test-build-multiarch-image.yml"
       - "test/image/**"
   workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.sha || github.ref }}
@@ -44,3 +46,4 @@ jobs:
       image_name: ghcr.io/xrplf/actions/actions-test-${{ matrix.distro.name }}
       dockerfile: test/image/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
+      push: ${{ github.repository == 'XRPLF/actions' && github.event_name != 'pull_request' }}
