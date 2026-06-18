@@ -52,7 +52,6 @@ jobs:
           cmake --version
           conan --version
           ccache --version
-          rustc -Vv
 
           if [[ "${{ matrix.os }}" == "macos15" ]]; then
               colima --version
