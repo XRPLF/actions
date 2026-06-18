@@ -11,7 +11,7 @@ jobs:
   test-create-issue:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/xrplf/xrpld/nixos-ubuntu:latest
+      image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
 
     permissions:
       contents: read
