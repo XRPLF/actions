@@ -26,9 +26,9 @@ jobs:
       matrix:
         include:
           - os: heavy
-            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+            container: '{ "image": "ghcr.io/xrplf/xrpld/nixos-ubuntu:latest" }'
           - os: heavy-arm64
-            container: '{ "image": "ghcr.io/xrplf/clio-ci:latest" }'
+            container: '{ "image": "ghcr.io/xrplf/xrpld/nixos-ubuntu:latest" }'
           - os: macos15
           - os: windows
 
