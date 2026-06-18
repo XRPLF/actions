@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       task_types:
-        description: 'JSON array of allowed conventional commit prefixes.'
+        description: "JSON array of allowed conventional commit prefixes."
         type: string
         required: true
 
