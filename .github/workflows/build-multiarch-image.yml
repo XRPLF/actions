@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       image_name:
-        description: "Full image name without tag (e.g. 'ghcr.io/xrplf/xrpld/nix-ubuntu')"
+        description: "Image name without tag (e.g. 'xrpld/nix-ubuntu')"
         required: true
         type: string
       dockerfile:
@@ -58,6 +58,11 @@ jobs:
       packages: write
 
     steps:
+      - name: Set GHCR_REPO
+        id: set-ghcr-repo
+        run: |
+          echo "GHCR_REPO=$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >>${GITHUB_OUTPUT}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
@@ -65,7 +70,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
-          images: ${{ inputs.image_name }}
+          images: ${{ steps.set-ghcr-repo.outputs.GHCR_REPO }}/${{ inputs.image_name }}
           tags: |
             type=sha,prefix=sha-,format=short
             type=raw,value=latest
@@ -87,7 +92,7 @@ jobs:
       - name: Inspect image
         if: ${{ inputs.push }}
         env:
-          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_NAME: ${{ steps.set-ghcr-repo.outputs.GHCR_REPO }}/${{ inputs.image_name }}
           IMAGE_VERSION: ${{ steps.meta.outputs.version }}
         run: |
           docker buildx imagetools inspect "${IMAGE_NAME}:${IMAGE_VERSION}"
