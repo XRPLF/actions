@@ -52,8 +52,8 @@ runs:
       shell: bash
       run: |
         pip3 install --break-system-packages \
-          cmake==4.2.1 \
-          conan==2.24.0
+          cmake==4.3.4 \
+          conan==2.29.1
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}
