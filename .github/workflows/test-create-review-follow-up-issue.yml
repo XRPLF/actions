@@ -1,0 +1,56 @@
+name: Test create-review-follow-up-issue
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "create-review-follow-up-issue/**"
+      - ".github/workflows/test-create-review-follow-up-issue.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test-create-review-follow-up-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Validate embedded script syntax
+        shell: bash
+        run: |
+          script="${RUNNER_TEMP:-/tmp}/review-follow-up.cjs"
+          awk '
+            /node <<.EOF.$/ { capture = 1; next }
+            capture && /^ *EOF$/ { exit }
+            capture { sub(/^        /, ""); print }
+          ' create-review-follow-up-issue/action.yml > "${script}"
+
+          if [[ ! -s "${script}" ]]; then
+            echo "Failed to extract the embedded script from action.yml" >&2
+            exit 1
+          fi
+
+          node --check "${script}"
+          echo "Embedded review follow-up script is valid JavaScript."
+
+      - name: Reject invalid PR number
+        id: invalid_pr
+        continue-on-error: true
+        uses: ./create-review-follow-up-issue
+        with:
+          pr_number: 0
+
+      - name: Assert invalid PR number was rejected
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.invalid_pr.outcome }}
+        run: |
+          if [[ "${OUTCOME}" != "failure" ]]; then
+            echo "Expected the action to fail for an invalid PR number, got: ${OUTCOME}" >&2
+            exit 1
+          fi
+          echo "Action correctly rejected an invalid PR number before any API call."
