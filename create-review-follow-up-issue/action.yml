@@ -840,6 +840,10 @@ runs:
 
           if (!unresolvedThreads.length) {
             console.log("No unresolved review threads found; no issue was created.");
+            setOutput("issue_number", "");
+            setOutput("issue_url", "");
+            setOutput("action", "skipped");
+            setOutput("assigned_to_pr_author", "false");
             return;
           }
 
