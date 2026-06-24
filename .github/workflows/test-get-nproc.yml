@@ -30,7 +30,7 @@ jobs:
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
           - os: macos15
-          - os: windows
+          - os: dev-box-windows-2026
 
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container != '' && fromJson(matrix.container) || null }}
