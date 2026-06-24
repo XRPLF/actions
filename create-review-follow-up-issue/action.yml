@@ -33,6 +33,24 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Check Node.js runtime
+      shell: bash
+      run: |
+        if ! command -v node >/dev/null 2>&1; then
+          echo "Error: action requires Node.js 18 or newer, but node was not found on PATH. Install Node.js 18+ on this runner before using this action."
+          exit 1
+        fi
+
+        node -e '
+          const version = process.versions.node;
+          const major = Number(version.split(".")[0]);
+
+          if (!Number.isInteger(major) || major < 18 || typeof fetch !== "function") {
+            console.error(`Error: action requires Node.js 18 or newer with global fetch. Current Node.js version: ${version}.`);
+            process.exit(1);
+          }
+        '
+
     - name: Create or update follow-up issue
       id: run
       shell: bash
