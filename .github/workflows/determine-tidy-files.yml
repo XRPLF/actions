@@ -17,8 +17,8 @@ jobs:
     name: Determine files to check
     runs-on: ubuntu-latest
     outputs:
-      need_full_run: ${{ github.event_name != 'pull_request' || steps.full_run_triggers.outputs.any_changed == 'true' }}
-      cpp_changed_files: ${{ steps.changed_cpp_files.outputs.all_changed_files }}
+      need_full_run: ${{ steps.results.outputs.need_full_run }}
+      cpp_changed_files: ${{ steps.results.outputs.cpp_changed_files }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -48,7 +48,12 @@ jobs:
             **/*.ipp
           separator: " "
 
-      - name: Output results
+      - name: Determine and output results
+        id: results
+        env:
+          NEED_FULL_RUN: ${{ github.event_name != 'pull_request' || steps.full_run_triggers.outputs.any_changed == 'true' }}
+          CPP_CHANGED_FILES: ${{ steps.changed_cpp_files.outputs.all_changed_files }}
         run: |
-          echo "Need full run: ${{ github.event_name != 'pull_request' || steps.full_run_triggers.outputs.any_changed == 'true' }}"
-          echo "Changed C++ files: ${{ steps.changed_cpp_files.outputs.all_changed_files }}"
+          set -x
+          echo "need_full_run=${NEED_FULL_RUN}" >> "${GITHUB_OUTPUT}"
+          echo "cpp_changed_files=${CPP_CHANGED_FILES}" >> "${GITHUB_OUTPUT}"
