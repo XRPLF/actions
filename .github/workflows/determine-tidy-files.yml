@@ -32,6 +32,7 @@ jobs:
             **/.clang-tidy
             CMakeLists.txt
             **/CMakeLists.txt
+            cmake/**
             conanfile.py
             conan.lock
             .github/workflows/reusable-clang-tidy.yml
