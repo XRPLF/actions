@@ -3,8 +3,8 @@ name: Determine clang-tidy files
 on:
   workflow_call:
     outputs:
-      clang_tidy_config_changed:
-        value: ${{ jobs.determine-tidy-files.outputs.clang_tidy_config_changed }}
+      need_full_run:
+        value: ${{ jobs.determine-tidy-files.outputs.need_full_run }}
       cpp_changed_files:
         value: ${{ jobs.determine-tidy-files.outputs.cpp_changed_files }}
 
@@ -17,18 +17,26 @@ jobs:
     name: Determine files to check
     runs-on: ubuntu-latest
     outputs:
-      clang_tidy_config_changed: ${{ steps.changed_clang_tidy_config.outputs.any_changed }}
-      cpp_changed_files: ${{ steps.changed_cpp_files.outputs.all_changed_files }}
+      need_full_run: ${{ steps.results.outputs.need_full_run }}
+      cpp_changed_files: ${{ steps.results.outputs.cpp_changed_files }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Get changed clang-tidy configuration
-        id: changed_clang_tidy_config
+      - name: Get changed full-run triggers
+        id: full_run_triggers
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
         with:
           files: |
             .clang-tidy
+            **/.clang-tidy
+            CMakeLists.txt
+            **/CMakeLists.txt
+            cmake/**
+            conanfile.py
+            conan.lock
+            .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/clang-tidy.yml
 
       - name: Get changed C++ files
         id: changed_cpp_files
@@ -41,7 +49,12 @@ jobs:
             **/*.ipp
           separator: " "
 
-      - name: Output results
+      - name: Determine and output results
+        id: results
+        env:
+          NEED_FULL_RUN: ${{ github.event_name != 'pull_request' || steps.full_run_triggers.outputs.any_changed == 'true' }}
+          CPP_CHANGED_FILES: ${{ steps.changed_cpp_files.outputs.all_changed_files }}
         run: |
-          echo "Clang-tidy config changed: ${{ steps.changed_clang_tidy_config.outputs.any_changed }}"
-          echo "Changed C++ files: ${{ steps.changed_cpp_files.outputs.all_changed_files }}"
+          set -x
+          echo "need_full_run=${NEED_FULL_RUN}" >> "${GITHUB_OUTPUT}"
+          echo "cpp_changed_files=${CPP_CHANGED_FILES}" >> "${GITHUB_OUTPUT}"
