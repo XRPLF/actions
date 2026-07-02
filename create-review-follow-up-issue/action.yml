@@ -1,0 +1,890 @@
+name: Create a review follow-up issue
+description: Create or update a follow-up issue collecting unresolved code reviews from a Pull Request
+
+inputs:
+  pr_number:
+    description: Pull request number to scan for unresolved code reviews
+    required: true
+  issue_title:
+    description: Optional title for the follow-up issue
+    required: false
+  labels:
+    description: Optional comma-separated existing labels for a new follow-up issue
+    required: false
+    default: ""
+
+outputs:
+  unresolved_count:
+    description: Number of unresolved review threads found on the pull request
+    value: ${{ steps.run.outputs.unresolved_count }}
+  issue_number:
+    description: Number of the follow-up issue that was created or updated
+    value: ${{ steps.run.outputs.issue_number }}
+  issue_url:
+    description: HTML URL of the follow-up issue that was created or updated
+    value: ${{ steps.run.outputs.issue_url }}
+  action:
+    description: Whether the follow-up issue was "created" or "updated"
+    value: ${{ steps.run.outputs.action }}
+  assigned_to_pr_author:
+    description: Whether the follow-up issue was assigned to the pull request author
+    value: ${{ steps.run.outputs.assigned_to_pr_author }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check Node.js runtime
+      shell: bash
+      run: |
+        if ! command -v node >/dev/null 2>&1; then
+          echo "Error: action requires Node.js 18 or newer, but node was not found on PATH. Install Node.js 18+ on this runner before using this action."
+          exit 1
+        fi
+
+        node -e '
+          const version = process.versions.node;
+          const major = Number(version.split(".")[0]);
+
+          if (!Number.isInteger(major) || major < 18 || typeof fetch !== "function") {
+            console.error(`Error: action requires Node.js 18 or newer with global fetch. Current Node.js version: ${version}.`);
+            process.exit(1);
+          }
+        '
+
+    - name: Create or update follow-up issue
+      id: run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ inputs.pr_number }}
+        ISSUE_TITLE: ${{ inputs.issue_title }}
+        LABELS: ${{ inputs.labels }}
+      run: |
+        node <<'EOF'
+        const fs = require("node:fs");
+
+        const token = process.env.GH_TOKEN;
+        const repository = process.env.GITHUB_REPOSITORY;
+        const [owner, repo] = repository.split("/");
+        const prNumber = Number(process.env.PR_NUMBER);
+        const apiBase = process.env.GITHUB_API_URL || "https://api.github.com";
+        const serverUrl = process.env.GITHUB_SERVER_URL || "https://github.com";
+        const runUrl = `${serverUrl}/${repository}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+        const marker = `review-followup-pr-${prNumber}`;
+        const issueMarker = `<!-- ${marker} -->`;
+        const commentMarker = `<!-- ${marker}-comment -->`;
+        const maxCommentChars = 3500;
+        const maxDiffHunkChars = 5000;
+        const maxIssueBodyChars = 60000;
+        const workflowBotLogin = "github-actions[bot]";
+        const fileContentCache = new Map();
+
+        if (!token)
+          throw new Error("GH_TOKEN is required");
+
+        if (!Number.isInteger(prNumber) || prNumber <= 0)
+          throw new Error(`Invalid PR number: ${process.env.PR_NUMBER}`);
+
+        const apiHeaders = {
+          "Accept": "application/vnd.github+json",
+          "Authorization": `Bearer ${token}`,
+          "User-Agent": "review-follow-up-workflow",
+          "X-GitHub-Api-Version": "2022-11-28",
+        };
+
+        async function request(method, path, body) {
+          const response = await fetch(`${apiBase}${path}`, {
+            method,
+            headers: {
+              ...apiHeaders,
+              ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+            },
+            body: body === undefined ? undefined : JSON.stringify(body),
+          });
+
+          const text = await response.text();
+          const data = text ? JSON.parse(text) : null;
+
+          if (!response.ok) {
+            const detail = data?.message ? `${data.message}: ${text}` : text;
+            throw new Error(`${method} ${path} failed with ${response.status}: ${detail}`);
+          }
+
+          return data;
+        }
+
+        async function graphql(query, variables) {
+          const data = await request("POST", "/graphql", { query, variables });
+
+          if (data.errors?.length) {
+            throw new Error(
+              `GraphQL failed: ${data.errors.map((error) => error.message).join("; ")}`
+            );
+          }
+
+          return data.data;
+        }
+
+        async function getPullRequestWithReviewThreads() {
+          const query = `
+            query PullRequestReviewThreads(
+              $owner: String!
+              $repo: String!
+              $number: Int!
+              $after: String
+            ) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $number) {
+                  author {
+                    login
+                  }
+                  headRefOid
+                  number
+                  title
+                  url
+                  state
+                  reviewThreads(first: 50, after: $after) {
+                    nodes {
+                      id
+                      diffSide
+                      isOutdated
+                      isResolved
+                      line
+                      originalLine
+                      originalStartLine
+                      path
+                      startLine
+                      subjectType
+                      comments(first: 100) {
+                        totalCount
+                        nodes {
+                          author {
+                            login
+                          }
+                          body
+                          createdAt
+                          commit {
+                            oid
+                          }
+                          diffHunk
+                          id
+                          isMinimized
+                          line
+                          minimizedReason
+                          originalCommit {
+                            oid
+                          }
+                          originalLine
+                          originalStartLine
+                          path
+                          state
+                          startLine
+                          subjectType
+                          updatedAt
+                          url
+                        }
+                      }
+                    }
+                    pageInfo {
+                      endCursor
+                      hasNextPage
+                    }
+                  }
+                }
+              }
+            }
+          `;
+
+          let pullRequest = null;
+          const threads = [];
+          let after = null;
+
+          do {
+            const data = await graphql(query, { owner, repo, number: prNumber, after });
+            pullRequest = data.repository.pullRequest;
+
+            if (!pullRequest)
+              throw new Error(`Pull request #${prNumber} was not found in ${repository}`);
+
+            threads.push(...pullRequest.reviewThreads.nodes);
+            after = pullRequest.reviewThreads.pageInfo.hasNextPage
+              ? pullRequest.reviewThreads.pageInfo.endCursor
+              : null;
+          } while (after);
+
+          return { pullRequest, threads };
+        }
+
+        function truncate(text, limit) {
+          if (!text)
+            return "_No comment body._";
+
+          if (text.length <= limit)
+            return text;
+
+          return `${text.slice(0, limit - 35).trimEnd()}\n\n...[truncated, open the linked thread for the full comment]`;
+        }
+
+        function quote(text) {
+          return truncate(text, maxCommentChars)
+            .split("\n")
+            .map((line) => `> ${line}`)
+            .join("\n");
+        }
+
+        function truncateDiffHunk(text) {
+          if (!text)
+            return "";
+
+          if (text.length <= maxDiffHunkChars)
+            return text;
+
+          return `${text.slice(0, maxDiffHunkChars - 52).trimEnd()}\n# ...[truncated, open the linked thread for the full diff]`;
+        }
+
+        function codeFenceFor(text) {
+          const longestBacktickRun = Math.max(
+            0,
+            ...[...text.matchAll(/`+/g)].map((match) => match[0].length)
+          );
+
+          return "`".repeat(Math.max(4, longestBacktickRun + 1));
+        }
+
+        function authorName(comment) {
+          return comment?.author?.login ? `@${comment.author.login}` : "unknown";
+        }
+
+        function lineRange(subject) {
+          const start = subject.startLine || subject.originalStartLine;
+          const end = subject.line || subject.originalLine;
+
+          if (!end)
+            return "";
+
+          if (start && start !== end)
+            return `:${start}-${end}`;
+
+          return `:${end}`;
+        }
+
+        function formatLocation(thread, comment) {
+          const path = comment?.path || thread.path;
+          const subjectType = comment?.subjectType || thread.subjectType;
+          const subject = comment?.path ? comment : thread;
+
+          if (subjectType === "FILE")
+            return `\`${path}\``;
+
+          return `\`${path}${lineRange(subject)}\``;
+        }
+
+        function submittedVisibleComments(thread) {
+          const submitted = thread.comments.nodes.filter((comment) => comment.state === "SUBMITTED");
+          const visible = submitted.filter((comment) => !comment.isMinimized);
+          return visible.length ? visible : submitted;
+        }
+
+        function encodeContentPath(path) {
+          return path.split("/").map(encodeURIComponent).join("/");
+        }
+
+        async function getFileContent(path, ref) {
+          if (!path || !ref)
+            return null;
+
+          const cacheKey = `${ref}:${path}`;
+
+          if (fileContentCache.has(cacheKey))
+            return fileContentCache.get(cacheKey);
+
+          try {
+            const file = await request(
+              "GET",
+              `/repos/${owner}/${repo}/contents/${encodeContentPath(path)}?ref=${encodeURIComponent(ref)}`
+            );
+
+            if (Array.isArray(file) || file.type !== "file" || !file.content) {
+              fileContentCache.set(cacheKey, null);
+              return null;
+            }
+
+            const content = Buffer.from(file.content.replace(/\s/g, ""), "base64").toString("utf8");
+            fileContentCache.set(cacheKey, content);
+            return content;
+          } catch (error) {
+            console.warn(`Could not fetch ${path} at ${ref}: ${error.message}`);
+            fileContentCache.set(cacheKey, null);
+            return null;
+          }
+        }
+
+        function languageForPath(path) {
+          const extension = path?.split(".").pop()?.toLowerCase();
+          const languages = {
+            c: "c",
+            cc: "cpp",
+            cpp: "cpp",
+            cxx: "cpp",
+            h: "cpp",
+            hpp: "cpp",
+            hxx: "cpp",
+            js: "javascript",
+            json: "json",
+            md: "markdown",
+            py: "python",
+            sh: "bash",
+            yml: "yaml",
+            yaml: "yaml",
+          };
+
+          return languages[extension] || "";
+        }
+
+        function positiveInteger(value) {
+          return Number.isInteger(value) && value > 0 ? value : null;
+        }
+
+        function fallbackRange(thread, comment) {
+          const currentEnd = positiveInteger(comment?.line) || positiveInteger(thread.line);
+          const currentStart = positiveInteger(comment?.startLine) || positiveInteger(thread.startLine);
+
+          if (currentEnd)
+            return normalizeRange(currentStart, currentEnd, false);
+
+          const originalEnd =
+            positiveInteger(comment?.originalLine) || positiveInteger(thread.originalLine);
+          const originalStart =
+            positiveInteger(comment?.originalStartLine) || positiveInteger(thread.originalStartLine);
+
+          if (originalEnd)
+            return normalizeRange(originalStart, originalEnd, true);
+
+          return null;
+        }
+
+        function normalizeRange(startLine, endLine, original) {
+          const markedEnd = endLine;
+          const markedStart = startLine || endLine;
+          const from = Math.min(markedStart, markedEnd);
+          const to = Math.max(markedStart, markedEnd);
+          const singleLine = from === to;
+
+          return {
+            contextStart: singleLine ? Math.max(1, from - 3) : from,
+            contextEnd: to,
+            markedStart: from,
+            markedEnd: to,
+            original,
+            singleLine,
+          };
+        }
+
+        function fallbackRef(pullRequest, range, comment) {
+          if (range?.original)
+            return comment?.originalCommit?.oid || comment?.commit?.oid || pullRequest.headRefOid;
+
+          return comment?.commit?.oid || pullRequest.headRefOid;
+        }
+
+        function formatNumberedSnippet(path, entries) {
+          if (!entries.length)
+            return null;
+
+          const width = String(Math.max(...entries.map((entry) => entry.lineNumber))).length;
+          const language = languageForPath(path);
+          const body = truncateDiffHunk(
+            entries
+              .map((entry) => {
+                const marker = entry.marked ? ">" : " ";
+                return `${marker} ${String(entry.lineNumber).padStart(width)} | ${entry.text}`;
+              })
+              .join("\n")
+          );
+          const fence = codeFenceFor(body);
+
+          return [`${fence}${language}`, body, fence].join("\n");
+        }
+
+        function formatCodeSnippet(content, path, range) {
+          const lines = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+          const start = Math.min(range.contextStart, lines.length);
+          const end = Math.min(range.contextEnd, lines.length);
+
+          if (!start || start > end)
+            return null;
+
+          const entries = [];
+
+          for (let lineNumber = start; lineNumber <= end; ++lineNumber) {
+            entries.push({
+              lineNumber,
+              marked: lineNumber >= range.markedStart && lineNumber <= range.markedEnd,
+              text: lines[lineNumber - 1],
+            });
+          }
+
+          return formatNumberedSnippet(path, entries);
+        }
+
+        function rangeForDiffHunk(thread, comment) {
+          if (thread.diffSide === "LEFT") {
+            const end =
+              positiveInteger(comment?.originalLine) ||
+              positiveInteger(thread.originalLine) ||
+              positiveInteger(comment?.line) ||
+              positiveInteger(thread.line);
+            const start =
+              positiveInteger(comment?.originalStartLine) ||
+              positiveInteger(thread.originalStartLine) ||
+              positiveInteger(comment?.startLine) ||
+              positiveInteger(thread.startLine);
+
+            return end ? normalizeRange(start, end, true) : null;
+          }
+
+          const end =
+            positiveInteger(comment?.line) ||
+            positiveInteger(thread.line) ||
+            positiveInteger(comment?.originalLine) ||
+            positiveInteger(thread.originalLine);
+          const start =
+            positiveInteger(comment?.startLine) ||
+            positiveInteger(thread.startLine) ||
+            positiveInteger(comment?.originalStartLine) ||
+            positiveInteger(thread.originalStartLine);
+
+          return end ? normalizeRange(start, end, false) : null;
+        }
+
+        function diffHunkStart(line) {
+          const match = line.match(/^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+
+          if (!match)
+            return null;
+
+          return {
+            left: Number(match[1]),
+            right: Number(match[2]),
+          };
+        }
+
+        function formatDiffHunkSnippet(diffHunk, path, thread, comment) {
+          const range = rangeForDiffHunk(thread, comment);
+          const side = thread.diffSide === "LEFT" ? "LEFT" : "RIGHT";
+          const entries = [];
+          let leftLine = null;
+          let rightLine = null;
+
+          for (const rawLine of diffHunk.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n")) {
+            const start = diffHunkStart(rawLine);
+
+            if (start) {
+              leftLine = start.left;
+              rightLine = start.right;
+              continue;
+            }
+
+            if (leftLine === null || rightLine === null || rawLine.startsWith("\\"))
+              continue;
+
+            const prefix = rawLine[0];
+            const text = rawLine.slice(1);
+
+            if (prefix === " ") {
+              entries.push({
+                lineNumber: side === "LEFT" ? leftLine : rightLine,
+                changed: false,
+                marked:
+                  !!range &&
+                  (side === "LEFT" ? leftLine : rightLine) >= range.markedStart &&
+                  (side === "LEFT" ? leftLine : rightLine) <= range.markedEnd,
+                text,
+              });
+              leftLine += 1;
+              rightLine += 1;
+              continue;
+            }
+
+            if (prefix === "-") {
+              if (side === "LEFT") {
+                entries.push({
+                  lineNumber: leftLine,
+                  changed: true,
+                  marked:
+                    !!range && leftLine >= range.markedStart && leftLine <= range.markedEnd,
+                  text,
+                });
+              }
+
+              leftLine += 1;
+              continue;
+            }
+
+            if (prefix === "+") {
+              if (side === "RIGHT") {
+                entries.push({
+                  lineNumber: rightLine,
+                  changed: true,
+                  marked:
+                    !!range && rightLine >= range.markedStart && rightLine <= range.markedEnd,
+                  text,
+                });
+              }
+
+              rightLine += 1;
+            }
+          }
+
+          if (entries.length && !entries.some((entry) => entry.marked)) {
+            const changedEntries = entries.filter((entry) => entry.changed);
+
+            if (changedEntries.length === 1)
+              changedEntries[0].marked = true;
+          }
+
+          return formatNumberedSnippet(path, entries);
+        }
+
+        async function formatCodeContext(thread, comment, pullRequest) {
+          const diffHunk = comment?.diffHunk?.trim();
+
+          if (!diffHunk)
+            return await formatFallbackCodeContext(thread, comment, pullRequest);
+
+          return (
+            formatDiffHunkSnippet(diffHunk, comment?.path || thread.path, thread, comment) ||
+            "_Source context is not available for this review thread._"
+          );
+        }
+
+        async function formatFallbackCodeContext(thread, comment, pullRequest) {
+          const path = comment?.path || thread.path;
+          const range = fallbackRange(thread, comment);
+          const ref = fallbackRef(pullRequest, range, comment);
+
+          if (!path || !range || !ref)
+            return "_Source context is not available for this review thread._";
+
+          const content = await getFileContent(path, ref);
+
+          if (!content)
+            return "_Source context is not available for this review thread._";
+
+          const snippet = formatCodeSnippet(content, path, range);
+
+          if (!snippet)
+            return "_Source context is not available for this review thread._";
+
+          return snippet;
+        }
+
+        async function formatThread(thread, index, pullRequest) {
+          const comments = submittedVisibleComments(thread);
+          const firstComment = comments[0] || thread.comments.nodes[0];
+          const status = thread.isOutdated ? "unresolved, outdated by newer changes" : "unresolved";
+          const url = firstComment?.url || `${serverUrl}/${repository}/pull/${prNumber}`;
+          const lines = [
+            `### ${index}. ${formatLocation(thread, firstComment)}`,
+            "",
+            await formatCodeContext(thread, firstComment, pullRequest),
+            "",
+            `${authorName(firstComment)} left [a review comment](${url}). Status: ${status}.`,
+            "",
+            quote(firstComment?.body),
+          ];
+
+          if (thread.comments.totalCount > comments.length) {
+            lines.push(
+              "",
+              `_Showing ${comments.length} of ${thread.comments.totalCount} comments in this thread. Open the thread for the full discussion._`
+            );
+          }
+
+          const replies = comments.slice(1);
+
+          if (replies.length) {
+            const replyLabel = replies.length === 1 ? "comment" : "comments";
+            lines.push(
+              "",
+              "<details>",
+              `<summary>Show replies (${replies.length} ${replyLabel})</summary>`,
+              ""
+            );
+
+            for (const comment of replies) {
+              lines.push(`#### ${authorName(comment)}`);
+              lines.push("");
+              lines.push(quote(comment.body));
+              lines.push("");
+            }
+
+            lines.push("</details>");
+          }
+
+          return lines.join("\n");
+        }
+
+        function defaultIssueTitle(pullRequest) {
+          const title = `Follow up review comments from PR #${pullRequest.number}: ${pullRequest.title}`;
+          return title.length <= 250 ? title : `${title.slice(0, 247)}...`;
+        }
+
+        async function buildIssueBody(pullRequest, unresolvedThreads) {
+          const title = `# Follow-up review comments from PR #${pullRequest.number}`;
+          const header = [
+            issueMarker,
+            title,
+            "",
+            `Source PR: [#${pullRequest.number} - ${pullRequest.title}](${pullRequest.url})`,
+            `Collected by: [workflow run](${runUrl})`,
+            "",
+            "Only unresolved pull request review threads are included. Threads where GitHub reports `isResolved: true` are intentionally omitted.",
+            "",
+            `## Unresolved review threads (${unresolvedThreads.length})`,
+          ].join("\n");
+
+          let body = header;
+          let included = 0;
+          let truncated = false;
+
+          for (const [index, thread] of unresolvedThreads.entries()) {
+            const section = `\n\n${await formatThread(thread, index + 1, pullRequest)}`;
+
+            if (body.length + section.length > maxIssueBodyChars) {
+              truncated = true;
+              break;
+            }
+
+            body += section;
+            included += 1;
+          }
+
+          if (truncated) {
+            body += [
+              "",
+              "",
+              "---",
+              "",
+              `_The issue body was truncated after ${included} of ${unresolvedThreads.length} unresolved threads to stay within GitHub's issue body limit. Open the source PR for the remaining threads._`,
+            ].join("\n");
+          }
+
+          return { body, included, truncated };
+        }
+
+        async function findIssueFromPullRequestComment() {
+          const comment = (await listPullRequestComments()).find((item) =>
+            item.user?.login === workflowBotLogin && item.body?.includes(commentMarker)
+          );
+
+          if (!comment)
+            return null;
+
+          const match = comment.body.match(/https?:\/\/\S+\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+)/);
+
+          if (!match)
+            return null;
+
+          if (
+            match[1].toLowerCase() !== owner.toLowerCase() ||
+            match[2].toLowerCase() !== repo.toLowerCase()
+          )
+            return null;
+
+          const issue = await request("GET", `/repos/${owner}/${repo}/issues/${match[3]}`);
+
+          if (issue.pull_request || issue.state !== "open")
+            return null;
+
+          return issue;
+        }
+
+        async function findExistingIssue() {
+          const issueFromComment = await findIssueFromPullRequestComment();
+
+          if (issueFromComment)
+            return issueFromComment;
+
+          const query = encodeURIComponent(`repo:${repository} is:issue is:open in:body ${marker}`);
+          const result = await request("GET", `/search/issues?q=${query}&per_page=10`);
+          return (
+            result.items.find(
+              (item) => !item.pull_request && item.user?.login === workflowBotLogin
+            ) || null
+          );
+        }
+
+        async function createOrUpdateIssue(pullRequest, body) {
+          const titleInput = process.env.ISSUE_TITLE?.trim();
+          const title = titleInput || defaultIssueTitle(pullRequest);
+          const existingIssue = await findExistingIssue();
+
+          if (existingIssue) {
+            const payload = { body };
+
+            if (titleInput)
+              payload.title = title;
+
+            const issue = await request(
+              "PATCH",
+              `/repos/${owner}/${repo}/issues/${existingIssue.number}`,
+              payload
+            );
+
+            return { action: "updated", issue };
+          }
+
+          const labels = (process.env.LABELS || "")
+            .split(",")
+            .map((label) => label.trim())
+            .filter(Boolean);
+          const payload = { title, body };
+
+          if (labels.length)
+            payload.labels = labels;
+
+          const issue = await request("POST", `/repos/${owner}/${repo}/issues`, payload);
+          return { action: "created", issue };
+        }
+
+        async function assignIssueToPullRequestAuthor(pullRequest, issue) {
+          const author = pullRequest.author?.login;
+
+          if (!author) {
+            console.warn(`Pull request #${pullRequest.number} does not have an assignable author.`);
+            return false;
+          }
+
+          if (
+            issue.assignees?.some(
+              (assignee) => assignee.login?.toLowerCase() === author.toLowerCase()
+            )
+          ) {
+            console.log(`Issue #${issue.number} is already assigned to ${author}.`);
+            return true;
+          }
+
+          try {
+            const updatedIssue = await request(
+              "POST",
+              `/repos/${owner}/${repo}/issues/${issue.number}/assignees`,
+              { assignees: [author] }
+            );
+            const assigned = updatedIssue.assignees?.some(
+              (assignee) => assignee.login?.toLowerCase() === author.toLowerCase()
+            );
+
+            if (!assigned)
+              console.warn(
+                `GitHub did not assign issue #${issue.number} to ${author}. The user may not be assignable in this repository.`
+              );
+            else
+              console.log(`Assigned issue #${issue.number} to ${author}.`);
+
+            return !!assigned;
+          } catch (error) {
+            console.warn(`Could not assign issue #${issue.number} to ${author}: ${error.message}`);
+            return false;
+          }
+        }
+
+        async function listPullRequestComments() {
+          const comments = [];
+          let page = 1;
+
+          while (true) {
+            const pageComments = await request(
+              "GET",
+              `/repos/${owner}/${repo}/issues/${prNumber}/comments?per_page=100&page=${page}`
+            );
+            comments.push(...pageComments);
+
+            if (pageComments.length < 100)
+              break;
+
+            page += 1;
+          }
+
+          return comments;
+        }
+
+        async function createOrUpdatePullRequestComment(issue, action, unresolvedCount, bodyInfo) {
+          const verb = action === "created" ? "Created" : "Updated";
+          const truncated = bodyInfo.truncated
+            ? ` The issue body lists ${bodyInfo.included} of them before truncation.`
+            : "";
+          const body = [
+            commentMarker,
+            `${verb} follow-up issue for unresolved review comments: ${issue.html_url}`,
+            "",
+            `Included ${unresolvedCount} unresolved review thread(s). Resolved review threads were ignored.${truncated}`,
+          ].join("\n");
+          const existingComment = (await listPullRequestComments()).find((comment) =>
+            comment.user?.login === workflowBotLogin && comment.body?.includes(commentMarker)
+          );
+
+          if (existingComment) {
+            await request(
+              "PATCH",
+              `/repos/${owner}/${repo}/issues/comments/${existingComment.id}`,
+              { body }
+            );
+            return;
+          }
+
+          await request("POST", `/repos/${owner}/${repo}/issues/${prNumber}/comments`, { body });
+        }
+
+        function setOutput(name, value) {
+          if (!process.env.GITHUB_OUTPUT)
+            return;
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
+        }
+
+        async function main() {
+          const { pullRequest, threads } = await getPullRequestWithReviewThreads();
+          const unresolvedThreads = threads.filter((thread) => !thread.isResolved);
+
+          console.log(
+            `Found ${threads.length} review thread(s), ${unresolvedThreads.length} unresolved.`
+          );
+          console.log(
+            `Pull request #${pullRequest.number} state is ${pullRequest.state}; unresolved thread collection is not filtered by PR state.`
+          );
+
+          setOutput("unresolved_count", String(unresolvedThreads.length));
+
+          if (!unresolvedThreads.length) {
+            console.log("No unresolved review threads found; no issue was created.");
+            setOutput("issue_number", "");
+            setOutput("issue_url", "");
+            setOutput("action", "skipped");
+            setOutput("assigned_to_pr_author", "false");
+            return;
+          }
+
+          const bodyInfo = await buildIssueBody(pullRequest, unresolvedThreads);
+          const { action, issue } = await createOrUpdateIssue(pullRequest, bodyInfo.body);
+          const assignedToAuthor = await assignIssueToPullRequestAuthor(pullRequest, issue);
+          await createOrUpdatePullRequestComment(
+            issue,
+            action,
+            unresolvedThreads.length,
+            bodyInfo
+          );
+
+          setOutput("issue_number", String(issue.number));
+          setOutput("issue_url", issue.html_url);
+          setOutput("action", action);
+          setOutput("assigned_to_pr_author", String(assignedToAuthor));
+
+          console.log(`${action} issue #${issue.number}: ${issue.html_url}`);
+        }
+
+        main().catch((error) => {
+          console.error(error);
+          process.exitCode = 1;
+        });
+        EOF

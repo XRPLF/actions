@@ -6,6 +6,7 @@ Reusable workflows and actions for XRPLF repos
 
 - `cleanup-workspace`: Cleans up the GitHub Actions workspace, should be used for self-hosted runners before running any steps.
 - `create-issue`: Creates an issue in the repository with a specified title and body.
+- `create-review-follow-up-issue`: Creates or updates a follow-up issue collecting unresolved code reviews from a Pull Request.
 - `get-nproc`: Retrieves the number of processing units available on the runner.
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.
