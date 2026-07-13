@@ -27,6 +27,7 @@ runs:
   steps:
     - name: Generate GitHub App token
       id: app-token
+      shell: bash
       uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
       with:
         client-id: ${{ inputs.client_id }}
@@ -36,6 +37,7 @@ runs:
 
     - name: Get GitHub App User ID
       id: app-user
+      shell: bash
       env:
         GH_TOKEN: ${{ steps.app-token.outputs.token }}
       run: |
@@ -44,6 +46,7 @@ runs:
 
     - name: Configure git
       id: configure-git
+      shell: bash
       run: |
         USER_NAME='${{ steps.app-token.outputs.app-slug }}[bot]'
         echo "user_name=${USER_NAME}" >> "${GITHUB_OUTPUT}"
