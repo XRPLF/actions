@@ -44,18 +44,18 @@ jobs:
             exit 1
           fi
           if [[ '${{ steps.app.outputs.user_name }}' != '${{ env.USER_NAME }}' ]]; then
-            echo "Expected user_name to be '${{ env.USER_NAME }}'."
+            echo "Unexpected app user_name."
             exit 1
           fi
           if [[ "${{ steps.app.outputs.user_email }}" != '${{ env.USER_EMAIL }}' ]]; then
-            echo "Expected user_email to be '${{ env.USER_EMAIL }}'."
+            echo "Unexpected app user_email."
             exit 1
           fi
           if [[ "$(git config --global user.name)" != '${{ steps.app.outputs.user_name }}' ]]; then
-            echo "Expected git user.name to be set to '${{ steps.app.outputs.user_name }}'."
+            echo "Unexpected git user.name'."
             exit 1
           fi
           if [[ "$(git config --global user.email)" != '${{ steps.app.outputs.user_email }}' ]]; then
-            echo "Expected git user.email to be set to '${{ steps.app.outputs.user_email }}'."
+            echo "Unexpected git user.email."
             exit 1
           fi
