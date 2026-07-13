@@ -59,4 +59,3 @@ jobs:
             echo "Expected git user.email to be set to '${{ steps.app.outputs.user_email }}'."
             exit 1
           fi
-          

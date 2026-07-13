@@ -49,7 +49,7 @@ runs:
         echo "user_name=${USER_NAME}" >> "${GITHUB_OUTPUT}"
         USER_EMAIL='${{ steps.app-user.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
         echo "user_email=${USER_EMAIL}" >> "${GITHUB_OUTPUT}"
-        
+
         git config --global user.name "${USER_NAME}"
         git config --global user.email "${USER_EMAIL}"
         # Disable nagging message.
