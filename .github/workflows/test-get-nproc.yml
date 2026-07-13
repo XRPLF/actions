@@ -20,7 +20,7 @@ env:
   SUBTRACTION: 2
 
 jobs:
-  test-prepare-runner:
+  test-get-nproc:
     strategy:
       fail-fast: false
       matrix:
