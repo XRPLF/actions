@@ -30,8 +30,8 @@ jobs:
         id: app
         uses: ./configure-github-app
         with:
-          client-id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
-          private-key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
+          client_id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
+          private_key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
 
       - name: Confirm results
