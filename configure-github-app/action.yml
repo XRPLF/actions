@@ -1,5 +1,5 @@
-name: Get token for app
-description: Create a token for a GitHub App and configure it as a Git credential
+name: Configure GitHub App
+description: Create a token for a GitHub App and configure the app as the git user
 
 inputs:
   client_id:

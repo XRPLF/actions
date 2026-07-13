@@ -1,13 +1,13 @@
 on:
   pull_request:
     paths:
-      - ".github/workflows/test-get-add-token.yml"
-      - "get-app-token/**"
+      - ".github/workflows/test-configure-github-app.yml"
+      - "configure-github-app/**"
   push:
     branches: [main]
     paths:
-      - ".github/workflows/test-get-app-token.yml"
-      - "get-app-token/**"
+      - ".github/workflows/test-configure-github-app.yml"
+      - "configure-github-app/**"
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * *"
@@ -17,7 +17,7 @@ defaults:
     shell: bash
 
 jobs:
-  test-get-app-token:
+  test-configure-github-app:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
@@ -26,9 +26,9 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Test get-app-token
+      - name: Test configure-github-app
         id: app
-        uses: ./get-app-token
+        uses: ./configure-github-app
         with:
           client-id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
           private-key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
