@@ -11,6 +11,7 @@ inputs:
   repositories:
     description: One or more comma-separated repositories to create the token for
     required: true
+
 outputs:
   app_token:
     description: The token for the GitHub App

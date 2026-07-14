@@ -5,6 +5,7 @@ updates:
     directories:
       - /
       - /cleanup-workspace/
+      - /configure-github-app/
       - /create-issue/
       - /get-nproc/
       - /prepare-runner/

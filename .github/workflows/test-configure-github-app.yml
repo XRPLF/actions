@@ -40,22 +40,22 @@ jobs:
           USER_EMAIL: 217668010+xrplf-github-bot[bot]@users.noreply.github.com
         run: |
           if [[ -z '${{ steps.app.outputs.app_token }}' ]]; then
-            echo "Expected app_token to be set."
+            echo "Expected app_token to be set"
             exit 1
           fi
           if [[ '${{ steps.app.outputs.user_name }}' != '${{ env.USER_NAME }}' ]]; then
-            echo "Unexpected app user_name."
+            echo "Unexpected app user_name"
             exit 1
           fi
           if [[ "${{ steps.app.outputs.user_email }}" != '${{ env.USER_EMAIL }}' ]]; then
-            echo "Unexpected app user_email."
+            echo "Unexpected app user_email"
             exit 1
           fi
           if [[ "$(git config --global user.name)" != '${{ steps.app.outputs.user_name }}' ]]; then
-            echo "Unexpected git user.name'."
+            echo "Unexpected git user.name"
             exit 1
           fi
           if [[ "$(git config --global user.email)" != '${{ steps.app.outputs.user_email }}' ]]; then
-            echo "Unexpected git user.email."
+            echo "Unexpected git user.email"
             exit 1
           fi
