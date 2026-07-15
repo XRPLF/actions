@@ -32,10 +32,10 @@ runs:
           clang-build-analyzer \
           colima \
           coreutils \
+          corrosion \
           docker \
           ninja \
-          python@3.14 \
-          rust
+          python@3.14
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -54,6 +54,49 @@ runs:
         pip3 install --break-system-packages \
           cmake==4.3.4 \
           conan==2.29.1
+
+    - name: Install rustup (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        CARGO_BIN="$HOME/.cargo/bin"
+        export PATH="$CARGO_BIN:$PATH"
+
+        if [ -x "$CARGO_BIN/rustup" ] || command -v rustup >/dev/null 2>&1; then
+          echo "rustup already installed; skipping installation"
+        else
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+            --default-toolchain stable \
+            --profile minimal
+        fi
+        echo "$CARGO_BIN" >> "$GITHUB_PATH"
+
+    - name: Install Rust toolchain (macOS and Windows)
+      if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        rustup show active-toolchain || rustup toolchain install
+        rustup component add clippy rustfmt
+
+
+    - name: Install cargo tools using cargo-binstall (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        CARGO_BIN="$HOME/.cargo/bin"
+        export PATH="$CARGO_BIN:$PATH"
+
+        if [ -x "$CARGO_BIN/cargo-binstall" ] || command -v cargo-binstall >/dev/null 2>&1; then
+          echo "cargo-binstall already installed; skipping installation"
+        else
+          curl --proto '=https' --tlsv1.2 -sSf -L \
+            https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+        cargo binstall --no-confirm \
+          cargo-audit \
+          cargo-llvm-cov \
+          cargo-nextest
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}

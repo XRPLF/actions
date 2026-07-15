@@ -57,3 +57,17 @@ jobs:
               colima --version
               docker --version
           fi
+
+      - name: Verify Rust tools are able to run
+        shell: bash
+        run: |
+          rustc --version
+          cargo --version
+
+          if [[ "${{ runner.os }}" != 'Windows' ]]; then
+            cargo clippy --version
+            cargo fmt --version
+            cargo audit --version
+            cargo llvm-cov --version
+            cargo nextest --version
+          fi
