@@ -61,13 +61,13 @@ jobs:
       - name: Verify Rust tools are able to run
         shell: bash
         run: |
-          rustc --version
           cargo --version
+          rustc --version
 
           if [[ "${{ runner.os }}" != 'Windows' ]]; then
+            cargo audit --version
             cargo clippy --version
             cargo fmt --version
-            cargo audit --version
             cargo llvm-cov --version
             cargo nextest --version
           fi
