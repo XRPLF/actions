@@ -16,6 +16,7 @@ on:
 jobs:
   test-pre-commit-autoupdate:
     uses: ./.github/workflows/pre-commit-autoupdate.yml
+    if: ${{ github.repository == 'XRPLF/actions' }}
     with:
       sign_commit: false
       committer: "Ayaz Salikhov <asalikhov@ripple.com>"
