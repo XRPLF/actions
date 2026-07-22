@@ -1,0 +1,61 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-configure-github-app.yml"
+      - "configure-github-app/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-configure-github-app.yml"
+      - "configure-github-app/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-configure-github-app:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Test configure-github-app
+        id: app
+        uses: ./configure-github-app
+        with:
+          client_id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
+          private_key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Confirm results
+        env:
+          USER_NAME: xrplf-github-bot[bot]
+          USER_EMAIL: 217668010+xrplf-github-bot[bot]@users.noreply.github.com
+        run: |
+          if [[ -z '${{ steps.app.outputs.app_token }}' ]]; then
+            echo "Expected app_token to be set"
+            exit 1
+          fi
+          if [[ '${{ steps.app.outputs.user_name }}' != '${{ env.USER_NAME }}' ]]; then
+            echo "Unexpected app user_name"
+            exit 1
+          fi
+          if [[ "${{ steps.app.outputs.user_email }}" != '${{ env.USER_EMAIL }}' ]]; then
+            echo "Unexpected app user_email"
+            exit 1
+          fi
+          if [[ "$(git config --global user.name)" != '${{ steps.app.outputs.user_name }}' ]]; then
+            echo "Unexpected git user.name"
+            exit 1
+          fi
+          if [[ "$(git config --global user.email)" != '${{ steps.app.outputs.user_email }}' ]]; then
+            echo "Unexpected git user.email"
+            exit 1
+          fi

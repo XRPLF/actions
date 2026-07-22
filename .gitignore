@@ -1,0 +1,18 @@
+# Macintosh Desktop Services Store files.
+.DS_Store
+
+# IDEs.
+/.idea/
+/.vs/
+/.vscode/
+/.zed/
+
+# AI tools.
+/.agent
+/.agents
+/.augment
+/.claude
+/CLAUDE.md
+
+# Python
+__pycache__

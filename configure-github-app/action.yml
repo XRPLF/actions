@@ -1,0 +1,59 @@
+name: Configure GitHub App
+description: Create a token for a GitHub App and configure the app as the git user
+
+inputs:
+  client_id:
+    description: The client identifier of the GitHub App
+    required: true
+  private_key:
+    description: The private key of the GitHub App
+    required: true
+  repositories:
+    description: One or more comma-separated repositories to create the token for
+    required: true
+
+outputs:
+  app_token:
+    description: The token for the GitHub App
+    value: ${{ steps.app-token.outputs.token }}
+  user_name:
+    description: The name of the GitHub App
+    value: ${{ steps.configure-git.outputs.user_name }}
+  user_email:
+    description: The email address of the GitHub App
+    value: ${{ steps.configure-git.outputs.user_email }}
+
+runs:
+  using: composite
+  steps:
+    - name: Generate GitHub App token
+      id: app-token
+      uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+      with:
+        client-id: ${{ inputs.client_id }}
+        private-key: ${{ inputs.private_key }}
+        owner: ${{ github.repository_owner }}
+        repositories: ${{ inputs.repositories }}
+
+    - name: Get GitHub App User ID
+      id: app-user
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      run: |
+        USER_ID=$(gh api '/users/${{ steps.app-token.outputs.app-slug }}[bot]' --jq .id)
+        echo "user_id=${USER_ID}" >> "${GITHUB_OUTPUT}"
+
+    - name: Configure git
+      id: configure-git
+      shell: bash
+      run: |
+        USER_NAME='${{ steps.app-token.outputs.app-slug }}[bot]'
+        echo "user_name=${USER_NAME}" >> "${GITHUB_OUTPUT}"
+        USER_EMAIL='${{ steps.app-user.outputs.user_id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
+        echo "user_email=${USER_EMAIL}" >> "${GITHUB_OUTPUT}"
+
+        git config --global user.name "${USER_NAME}"
+        git config --global user.email "${USER_EMAIL}"
+        # Disable nagging message.
+        git config --global advice.defaultBranchName false

@@ -43,7 +43,7 @@ jobs:
             base_image: registry.access.redhat.com/ubi9/ubi:latest
     uses: ./.github/workflows/build-multiarch-image.yml
     with:
-      image_name: ghcr.io/xrplf/actions/actions-test-${{ matrix.distro.name }}
+      image_name: actions/actions-test-${{ matrix.distro.name }}
       dockerfile: test/image/Dockerfile
       base_image: ${{ matrix.distro.base_image }}
       push: ${{ github.repository == 'XRPLF/actions' && github.event_name != 'pull_request' }}

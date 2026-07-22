@@ -15,7 +15,8 @@ runs:
       run: |
         brew uninstall --force \
           cmake \
-          conan
+          conan \
+          rust
 
     - name: Trust AWS Homebrew tap (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -32,10 +33,10 @@ runs:
           clang-build-analyzer \
           colima \
           coreutils \
+          corrosion \
           docker \
           ninja \
-          python@3.14 \
-          rust
+          python@3.14
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -52,12 +53,49 @@ runs:
       shell: bash
       run: |
         pip3 install --break-system-packages \
-          cmake==4.2.1 \
-          conan==2.24.0
+          cmake==4.3.4 \
+          conan==2.29.1
+
+    - name: Export Rust variables (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+    - name: Install rustup (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        if [ -x "$HOME/.cargo/bin/rustup" ] || command -v rustup >/dev/null 2>&1; then
+          echo "rustup already installed; skipping installation"
+        else
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+            --default-toolchain stable \
+            --profile minimal
+        fi
+
+    - name: Install cargo tools using cargo-binstall (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        CARGO_BIN="$HOME/.cargo/bin"
+        export PATH="$CARGO_BIN:$PATH"
+
+        if [ -x "$CARGO_BIN/cargo-binstall" ] || command -v cargo-binstall >/dev/null 2>&1; then
+          echo "cargo-binstall already installed; skipping installation"
+        else
+          curl --proto '=https' --tlsv1.2 -sSf -L \
+            https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        fi
+
+        cargo binstall --no-confirm \
+          cargo-audit \
+          cargo-llvm-cov \
+          cargo-nextest
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: 3.13
     - name: Install build tools using pip (Windows)
@@ -80,19 +118,24 @@ runs:
       run: |
         echo "CARGO_HOME=Z:\cargo" >> $GITHUB_ENV
         echo "RUSTUP_HOME=Z:\rustup" >> $GITHUB_ENV
+        echo "Z:\cargo\bin" >> $GITHUB_PATH
 
     - name: Install Rust (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        # 1. Download rustup-init.exe directly (the sh.rustup.rs wrapper auto-detects
-        #    --default-host as gnu in bash, causing a duplicate-flag error if we override it)
+        # Download rustup-init.exe directly (the sh.rustup.rs wrapper auto-detects
+        # --default-host as gnu in bash, causing a duplicate-flag error if we override it)
         curl --proto '=https' --tlsv1.2 -sSf -o rustup-init.exe https://win.rustup.rs/x86_64
         ./rustup-init.exe -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
         rm -f rustup-init.exe
 
-        # 2. Add to PATH for future steps
-        echo "${CARGO_HOME}\bin" >> $GITHUB_PATH
+    - name: Install Rust toolchain (macOS and Windows)
+      if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        rustup show active-toolchain || rustup toolchain install
+        rustup component add clippy rustfmt
 
     - name: Fix git permissions
       shell: bash

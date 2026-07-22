@@ -10,12 +10,5 @@ jobs:
   test-pre-commit:
     uses: ./.github/workflows/pre-commit.yml
     with:
-      runs_on: ${{ matrix.os }}
-      container: ${{ matrix.container }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            container: '{ "image": "ghcr.io/xrplf/clio-pre-commit:latest" }'
-          - os: ubuntu-latest
-            container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit:latest" }'
+      runs_on: ubuntu-latest
+      container: '{ "image": "ghcr.io/xrplf/xrpld/pre-commit:latest" }'

@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       image_name:
-        description: "Full image name without tag (e.g. 'ghcr.io/xrplf/xrpld/nix-ubuntu')"
+        description: "Image name without tag (e.g. 'xrpld/nix-ubuntu')"
         required: true
         type: string
       dockerfile:
@@ -58,20 +58,25 @@ jobs:
       packages: write
 
     steps:
+      - name: Set GHCR_REPO
+        id: set-ghcr-repo
+        run: |
+          echo "GHCR_REPO=$(echo ghcr.io/${{ github.repository_owner }} | tr '[:upper:]' '[:lower:]')" >>${GITHUB_OUTPUT}
+
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ inputs.image_name }}
+          images: ${{ steps.set-ghcr-repo.outputs.GHCR_REPO }}/${{ inputs.image_name }}
           tags: |
             type=sha,prefix=sha-,format=short
             type=raw,value=latest
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -87,7 +92,7 @@ jobs:
       - name: Inspect image
         if: ${{ inputs.push }}
         env:
-          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_NAME: ${{ steps.set-ghcr-repo.outputs.GHCR_REPO }}/${{ inputs.image_name }}
           IMAGE_VERSION: ${{ steps.meta.outputs.version }}
         run: |
           docker buildx imagetools inspect "${IMAGE_NAME}:${IMAGE_VERSION}"
