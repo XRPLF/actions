@@ -37,7 +37,8 @@ push_ref() {
 # repository ignores a valid token, so the same header is used for both.
 # Args: <remote-name> <owner/repo>
 add_authenticated_remote() {
-    local remote="$1" repo="$2" url="https://github.com/${repo}"
+    local remote="$1" repo="$2"
+    local url="https://github.com/${repo}"
     git remote add "${remote}" "${url}"
     git config --local "http.${url}/.extraheader" \
         "AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 | tr -d '\n')"
