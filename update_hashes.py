@@ -7,6 +7,17 @@ This script searches for references like:
   - XRPLF/actions/.github/workflows/pre-commit.yml@<hash>
 
 Then updates them with the latest commit hash that modified the referenced directory.
+
+Usage:
+    # Show what would be updated, without writing any changes
+    python3 update_hashes.py --dry-run /path/to/directory
+
+    # Apply the updates in place
+    python3 update_hashes.py /path/to/directory
+
+The positional argument is the directory that is scanned recursively for `*.yml`
+files. Latest commit hashes are resolved from this repository (the one holding
+this script), so run it from an up-to-date checkout of XRPLF/actions.
 """
 
 import argparse
@@ -14,7 +25,6 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, Set
 
 ACTIONS_REPO_PATH = Path(__file__).resolve().parent
 
@@ -57,54 +67,53 @@ PATTERN = re.compile(
 )
 
 
-def find_action_references(file_path: Path) -> Set[ActionReference]:
+def find_action_references(file_path: Path) -> set[ActionReference]:
     """
     Find all XRPLF/actions references with commit hashes in a file.
 
-    Returns:
-        Set of tuples: (full_match, action_path, current_hash)
-        where action_path is like 'get-nproc' or '.github/workflows/pre-commit.yml'
+    Returns a set of ActionReference objects, where ``action_path`` is like
+    'get-nproc' or '.github/workflows/pre-commit.yml'.
     """
-    references = set()
-
     content = file_path.read_text()
-    for match in PATTERN.finditer(content):
-        references.add(
-            ActionReference(
-                full_match=match.group(0),
-                action_path=match.group(1),
-                current_hash=match.group(2),
-            )
+    return {
+        ActionReference(
+            full_match=match.group(0),
+            action_path=match.group(1),
+            current_hash=match.group(2),
         )
-    return references
+        for match in PATTERN.finditer(content)
+    }
 
 
 def collect_all_references(
     directory: Path,
-) -> Dict[Path, Set[ActionReference]]:
-    all_references = {}
+) -> dict[Path, set[ActionReference]]:
+    all_references: dict[Path, set[ActionReference]] = {}
     for yaml_file in directory.rglob("*.yml"):
         if references := find_action_references(yaml_file):
-            print(f"Found in {yaml_file}: {references}")
+            print(f"Found {len(references)} reference(s) in {yaml_file}:")
+            for ref in sorted(references, key=lambda r: r.full_match):
+                print(f"  - {ref.full_match}")
             all_references[yaml_file] = references
     return all_references
 
 
 def get_hash_mapping(
-    all_references: Dict[Path, Set[ActionReference]],
-) -> Dict[str, str]:
-    hash_mapping = {}
+    all_references: dict[Path, set[ActionReference]],
+) -> dict[str, str]:
+    hash_mapping: dict[str, str] = {}
 
-    for file, references in all_references.items():
+    for references in all_references.values():
         for ref in references:
             if ref.action_path in hash_mapping:
                 continue
-            latest_hash = get_latest_commit_for_path(ACTIONS_REPO_PATH, ref.action_path)
-            hash_mapping[ref.action_path] = latest_hash
+            hash_mapping[ref.action_path] = get_latest_commit_for_path(
+                ACTIONS_REPO_PATH, ref.action_path
+            )
     return hash_mapping
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="Update XRPLF/actions hash references in GitHub workflow/action YAML files"
     )
