@@ -1,0 +1,84 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-encrypt-decrypt-token.yml"
+      - "encrypt-token/**"
+      - "decrypt-token/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-encrypt-decrypt-token.yml"
+      - "encrypt-token/**"
+      - "decrypt-token/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GPG_PASSPHRASE: test-passphrase
+  TEST_TOKEN: test-token-value
+
+jobs:
+  test-encrypt-decrypt-token:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Test encrypt-token
+        id: encrypt
+        uses: ./encrypt-token
+        with:
+          token: ${{ env.TEST_TOKEN }}
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+
+      - name: Confirm encryption results
+        env:
+          ENC_TOKEN: ${{ steps.encrypt.outputs.token }}
+        run: |
+          if [[ -z "${ENC_TOKEN}" ]]; then
+            echo "Expected token output to be set"
+            exit 1
+          fi
+          if [[ "${ENC_TOKEN}" == "test-token-value" ]]; then
+            echo "Expected token to be encrypted, but it was returned unchanged"
+            exit 1
+          fi
+
+          # The output must be valid base64.
+          if ! echo -n "${ENC_TOKEN}" | base64 -d >/dev/null; then
+            echo "Expected token to be valid base64"
+            exit 1
+          fi
+
+      - name: Test decrypt-token with a GPG-encrypted token
+        id: decrypt-encrypted
+        uses: ./decrypt-token
+        with:
+          token: ${{ steps.encrypt.outputs.token }}
+          gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
+
+      - name: Test decrypt-token with a plain (unencrypted) token
+        id: decrypt-plain
+        uses: ./decrypt-token
+        with:
+          token: ${{ env.TEST_TOKEN }}
+
+      - name: Confirm decryption results
+        env:
+          DECRYPTED: ${{ steps.decrypt-encrypted.outputs.token }}
+          PASSED_THROUGH: ${{ steps.decrypt-plain.outputs.token }}
+        run: |
+          if [[ "${DECRYPTED}" != "${TEST_TOKEN}" ]]; then
+            echo 'Expected the decrypted token to match the original.'
+            exit 1
+          fi
+          if [[ "${PASSED_THROUGH}" != "${TEST_TOKEN}" ]]; then
+            echo 'Expected the passed-through token to match the original.'
+            exit 1
+          fi

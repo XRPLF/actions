@@ -1,0 +1,24 @@
+name: Configure git
+description: Configure the git user identity for the current job
+
+inputs:
+  user_name:
+    description: The git user.name to configure
+    required: true
+  user_email:
+    description: The git user.email to configure
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure git
+      shell: bash
+      env:
+        USER_NAME: ${{ inputs.user_name }}
+        USER_EMAIL: ${{ inputs.user_email }}
+      run: |
+        git config --global user.name "${USER_NAME}"
+        git config --global user.email "${USER_EMAIL}"
+        # Disable nagging message.
+        git config --global advice.defaultBranchName false

@@ -1,0 +1,29 @@
+name: Clone repository
+description: Clone a repository, authenticated with a token, so that subsequent plain git commands (e.g. push) work without additional setup
+
+inputs:
+  repository:
+    description: The repository to clone, as 'owner/name'
+    required: true
+  token:
+    description: Token with access to the repository
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Clone repository
+      shell: bash
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+        TOKEN: ${{ inputs.token }}
+      # The token is passed via an HTTP Authorization header rather than embedded in the remote URL.
+      # Embedding would persist the credential in .git/config and, because git prints the remote URL
+      # in its error messages, risk leaking it into CI logs. Passing it as an 'extraheader' keeps
+      # git's output limited to 'https://github.com/<repo>'. This mirrors how actions/checkout
+      # authenticates, and is preserved in .git/config, so subsequent plain git commands (e.g. push)
+      # against this clone are authenticated too.
+      run: |
+        git clone \
+          -c "http.https://github.com/${REPOSITORY}.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)" \
+          "https://github.com/${REPOSITORY}"

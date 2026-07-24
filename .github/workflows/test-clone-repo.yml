@@ -1,0 +1,59 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-clone-repo.yml"
+      - "clone-repo/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-clone-repo.yml"
+      - "clone-repo/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-clone-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Test clone-repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ github.token }}
+
+      - name: Confirm results
+        env:
+          # Use github.repository instead of github.event.repository.name, since the latter is not
+          # populated for schedule-triggered runs.
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          REPO_NAME="${REPO_NAME#*/}"
+          cd "${REPO_NAME}"
+
+          if [[ ! -d ".git" ]]; then
+            echo "Expected the repository to be cloned into a directory named '${REPO_NAME}'"
+            exit 1
+          fi
+          if [[ ! -f "README.md" ]]; then
+            echo "Expected the cloned repository to contain README.md"
+            exit 1
+          fi
+
+          # The auth header must be persisted into .git/config so subsequent plain git commands
+          # (e.g. push) against this clone are authenticated without any further setup.
+          if ! git config --local --get-regexp '^http\..*\.extraheader$' >/dev/null; then
+            echo "Expected an authenticated HTTP extraheader to be configured on the clone"
+            exit 1
+          fi
+
+          # A plain git command (not routed through gh) should succeed against this clone.
+          git fetch origin

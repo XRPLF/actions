@@ -23,7 +23,7 @@ jobs:
       image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Test configure-github-app
@@ -49,13 +49,5 @@ jobs:
           fi
           if [[ "${{ steps.app.outputs.user_email }}" != '${{ env.USER_EMAIL }}' ]]; then
             echo "Unexpected app user_email"
-            exit 1
-          fi
-          if [[ "$(git config --global user.name)" != '${{ steps.app.outputs.user_name }}' ]]; then
-            echo "Unexpected git user.name"
-            exit 1
-          fi
-          if [[ "$(git config --global user.email)" != '${{ steps.app.outputs.user_email }}' ]]; then
-            echo "Unexpected git user.email"
             exit 1
           fi

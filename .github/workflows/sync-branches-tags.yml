@@ -1,0 +1,128 @@
+# This workflow can be used to synchronize branches and tags between two repositories. By default,
+# existing destination branches are fast-forwarded to match the source, but this can be changed to
+# overwrite (force-push) diverged branches for manual runs, as well as to perform a dry run. Missing
+# branches are always created. Tags are synced after all branch jobs complete.
+name: Synchronize branches and tags between two repositories
+
+on:
+  workflow_call:
+    inputs:
+      source:
+        description: "Source repository to synchronize from (e.g. owner/src)."
+        type: string
+        required: true
+      destination:
+        description: "Destination repository to synchronize to (e.g. owner/dst)."
+        type: string
+        required: true
+      branches:
+        description: "Comma-separated branch names/globs to synchronize."
+        type: string
+        required: true
+      dry_run:
+        description: "Perform a dry run: report what would change without pushing anything."
+        type: boolean
+        default: false
+      force:
+        description: "Overwrite (force-push) destination branches if they have diverged from the source."
+        type: boolean
+        default: false
+    secrets:
+      gh_token:
+        description: "GitHub token (optionally GPG-encrypted and base64-encoded) to use for authentication, which must have access to read from the source repo and write to the destination repo."
+        required: true
+      gpg_passphrase:
+        description: "GPG passphrase to use for decrypting the token, if it is encrypted."
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Determine the list of branches to synchronize into a JSON array that the matrix below expands.
+  get-branches:
+    name: Get branches
+    runs-on: ubuntu-latest
+    outputs:
+      branches: ${{ steps.list.outputs.branches }}
+    steps:
+      - name: Determine branch list
+        id: list
+        env:
+          BRANCHES: ${{ inputs.branches }}
+        run: |
+          # Convert the comma-separated list into the JSON array the matrix expects. Trim whitespace
+          # and drop empty entries to avoid matrix jobs with blank branch names.
+          JSON="$(printf '%s' "${BRANCHES}" | jq --raw-input --compact-output \
+            'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))')"
+          if [ "${JSON}" = "[]" ]; then
+            echo "::error::No branches to synchronize after parsing '${BRANCHES}'."
+            exit 1
+          fi
+          echo "branches=${JSON}" >> "$GITHUB_OUTPUT"
+
+  # Sync each branch in its own job so they can run in parallel.
+  sync-branch:
+    name: Synchronize ${{ matrix.branch }}
+    needs: get-branches
+    runs-on: ubuntu-latest
+    strategy:
+      # Do not cancel the other branches if one fails; each branch is synchronized independently.
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.get-branches.outputs.branches) }}
+    steps:
+      # Explicitly check out the current repository so we can reference the local files.
+      - name: Checkout workflow repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+
+      - name: Decrypt token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ secrets.gh_token }}
+          gpg_passphrase: ${{ secrets.gpg_passphrase }}
+
+      - name: Sync branch
+        env:
+          GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
+          BRANCH: ${{ matrix.branch }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          FORCE: ${{ inputs.force }}
+          SOURCE_REPO: ${{ inputs.source }}
+          DEST_REPO: ${{ inputs.destination }}
+        run: .github/scripts/sync-branches.sh
+
+  # Sync tags only after all branch jobs complete, so that tagged commits are always reachable from
+  # a branch in the destination repository before the tag pointing to them arrives.
+  sync-tags:
+    name: Synchronize tags
+    needs: sync-branch
+    runs-on: ubuntu-latest
+    steps:
+      # Explicitly check out the current repository so we can reference the local files.
+      - name: Checkout workflow repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+
+      - name: Decrypt token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ secrets.gh_token }}
+          gpg_passphrase: ${{ secrets.gpg_passphrase }}
+
+      - name: Sync tags
+        env:
+          GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          FORCE: ${{ inputs.force }}
+          SOURCE_REPO: ${{ inputs.source }}
+          DEST_REPO: ${{ inputs.destination }}
+        run: .github/scripts/sync-tags.sh

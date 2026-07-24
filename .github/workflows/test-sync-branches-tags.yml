@@ -1,0 +1,389 @@
+name: Test synchronizing branches and tags between two repositories
+
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/sync-*"
+      - ".github/workflows/sync-branches-tags.yml"
+      - ".github/workflows/test-sync-branches-tags.yml"
+      - "clone-repo/**"
+      - "configure-git/**"
+      - "configure-github-app/**"
+      - "decrypt-token/**"
+      - "encrypt-token/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/scripts/sync-*"
+      - ".github/workflows/sync-branches-tags.yml"
+      - ".github/workflows/test-sync-branches-tags.yml"
+      - "clone-repo/**"
+      - "configure-git/**"
+      - "configure-github-app/**"
+      - "decrypt-token/**"
+      - "encrypt-token/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 9 * * *"
+
+# Limit a single instance of this workflow to run at a time by gating on a single named concurrency
+# group, to prevent multiple instances from trying to update the same branches and tags at the same
+# time. An ongoing execution is not canceled.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # The source and destination repositories to use.
+  REPO_SRC: actions-sync-test-src
+  REPO_DST: actions-sync-test-dst
+  # The branch and tag names to use.
+  BRANCH: test-${{ github.run_id }}-${{ github.run_attempt }}
+  TAG: v${{ github.run_number }}.${{ github.run_attempt }}
+
+jobs:
+  # Configure the GitHub App token to use for authentication, and GPG-encrypt and base64-encode the
+  # token so it can be passed to subsequent jobs.
+  get-token:
+    name: Get GitHub App token
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Configure GitHub App
+        id: configure-app
+        uses: ./configure-github-app
+        with:
+          client_id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
+          private_key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
+          repositories: ${{ env.REPO_SRC }},${{ env.REPO_DST }}
+          # The token is passed to and used by later jobs in this workflow, so it must not be
+          # revoked when this job completes.
+          skip_token_revoke: true
+
+      - name: Encrypt GitHub App token
+        id: encrypt-token
+        uses: ./encrypt-token
+        with:
+          token: ${{ steps.configure-app.outputs.app_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+    outputs:
+      enc_token: ${{ steps.encrypt-token.outputs.token }}
+      # The username and email are needed to configure git for each commit.
+      user_name: ${{ steps.configure-app.outputs.user_name }}
+      user_email: ${{ steps.configure-app.outputs.user_email }}
+
+  # Create the test branch and tag in the source repository.
+  create-branch-tag:
+    name: Create branch and tag
+    runs-on: ubuntu-latest
+    needs: get-token
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Configure git
+        uses: ./configure-git
+        with:
+          user_name: ${{ needs.get-token.outputs.user_name }}
+          user_email: ${{ needs.get-token.outputs.user_email }}
+
+      - name: Clone the source repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_SRC }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Create a test branch and tag in the source repo
+        working-directory: ${{ env.REPO_SRC }}
+        run: |
+          git checkout -b ${BRANCH}
+          git commit --allow-empty -m "Test commit"
+          git push --set-upstream origin ${BRANCH}
+          git tag ${TAG}
+          git push origin tag ${TAG}
+    outputs:
+      # The env context is not available in a job's `with:` when calling a reusable workflow, so
+      # expose these as job outputs for the sync-* jobs below to consume via `needs`. (Note that, in
+      # contrast, the env context is available in a step's `with:` when calling a local action.)
+      repo_src: ${{ env.REPO_SRC }}
+      repo_dst: ${{ env.REPO_DST }}
+      branch: ${{ env.BRANCH }}
+
+  # Do a sync dry-run to ensure the workflow and scripts are working.
+  sync-dry-run:
+    name: Sync branches and tags (dry-run)
+    needs:
+      - get-token
+      - create-branch-tag
+    uses: ./.github/workflows/sync-branches-tags.yml
+    secrets:
+      gh_token: ${{ needs.get-token.outputs.enc_token }}
+      gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+    with:
+      source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
+      destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
+      branches: ${{ needs.create-branch-tag.outputs.branch }}
+      dry_run: true
+      force: false
+
+  # Verify that the test branch and tag do not exist in the destination repo.
+  verify-dry-run:
+    name: Verify (dry-run)
+    runs-on: ubuntu-latest
+    needs:
+      - get-token
+      - create-branch-tag
+      - sync-dry-run
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Clone the destination repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Verify that the test branch and tag do not exist in the destination repo
+        working-directory: ${{ env.REPO_DST }}
+        run: |
+          # A plain clone only checks out the default branch under refs/heads; every other branch
+          # (including this test branch) is only present as a remote-tracking ref.
+          if git show-ref --verify --quiet refs/remotes/origin/${BRANCH}; then
+            echo "Branch ${BRANCH} exists in ${REPO_DST}, but should not."
+            exit 1
+          fi
+          if git show-ref --verify --quiet refs/tags/${TAG}; then
+            echo "Tag ${TAG} exists in ${REPO_DST}, but should not."
+            exit 1
+          fi
+
+  # Do a regular (non-dry-run, non-force) sync, which will create the test branch and tag in the
+  # destination repository.
+  sync-regular:
+    name: Sync branches and tags (regular)
+    uses: ./.github/workflows/sync-branches-tags.yml
+    needs:
+      - get-token
+      - create-branch-tag
+      - verify-dry-run
+    secrets:
+      gh_token: ${{ needs.get-token.outputs.enc_token }}
+      gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+    with:
+      source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
+      destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
+      branches: ${{ needs.create-branch-tag.outputs.branch }}
+      dry_run: false
+      force: false
+
+  # Verify that the test branch and tag now exist in the destination repository.
+  verify-regular:
+    name: Verify (regular)
+    runs-on: ubuntu-latest
+    needs:
+      - get-token
+      - create-branch-tag
+      - sync-regular
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Clone the destination repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Verify that the test branch and tag exist in the destination repo
+        working-directory: ${{ env.REPO_DST }}
+        run: |
+          if ! git show-ref --verify --quiet refs/remotes/origin/${BRANCH}; then
+            echo "Branch ${BRANCH} does not exist in ${REPO_DST}, but should."
+            exit 1
+          fi
+          if ! git show-ref --verify --quiet refs/tags/${TAG}; then
+            echo "Tag ${TAG} does not exist in ${REPO_DST}, but should."
+            exit 1
+          fi
+
+  # Create a conflict in the destination repository by adding a commit to the test branch.
+  create-conflict:
+    name: Create a conflict in the destination repository
+    runs-on: ubuntu-latest
+    needs:
+      - get-token
+      - create-branch-tag
+      - verify-regular
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Configure git
+        uses: ./configure-git
+        with:
+          user_name: ${{ needs.get-token.outputs.user_name }}
+          user_email: ${{ needs.get-token.outputs.user_email }}
+
+      - name: Clone the destination repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Create a conflict in the destination repository
+        id: conflict-hash
+        working-directory: ${{ env.REPO_DST }}
+        run: |
+          git checkout ${BRANCH}
+          git commit --allow-empty -m "Conflict commit"
+          git push --set-upstream origin ${BRANCH}
+          COMMIT=$(git rev-parse HEAD)
+          echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
+    outputs:
+      commit: ${{ steps.conflict-hash.outputs.commit }}
+
+  # Do a force sync to overwrite the conflict created above.
+  sync-force:
+    name: Sync branches and tags (force)
+    needs:
+      - get-token
+      - create-branch-tag
+      - create-conflict
+    uses: ./.github/workflows/sync-branches-tags.yml
+    secrets:
+      gh_token: ${{ needs.get-token.outputs.enc_token }}
+      gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+    with:
+      source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
+      destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
+      branches: ${{ needs.create-branch-tag.outputs.branch }}
+      dry_run: false
+      force: true
+
+  # Verify that the conflict has been overwritten.
+  verify-force:
+    name: Verify (force)
+    runs-on: ubuntu-latest
+    needs:
+      - get-token
+      - create-branch-tag
+      - create-conflict
+      - sync-force
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Clone the destination repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Verify that the conflict no longer exists in the destination repo
+        working-directory: ${{ env.REPO_DST }}
+        env:
+          COMMIT: ${{ needs.create-conflict.outputs.commit }}
+        run: |
+          git checkout ${BRANCH}
+          if git merge-base --is-ancestor ${COMMIT} HEAD; then
+            echo "Branch ${BRANCH} contains commit ${COMMIT}, but shouldn't."
+            exit 1
+          fi
+
+  # Clean up the test branch and tag from both repositories, and revoke the GitHub App token. Run
+  # the cleanup job even if previous jobs failed, and also run some of the steps unconditionally, so
+  # they also run if previous jobs failed.
+  clean-up:
+    name: Clean up
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - get-token
+      - create-branch-tag
+      - verify-force
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Decrypt GitHub App token
+        id: decrypt-token
+        uses: ./decrypt-token
+        with:
+          token: ${{ needs.get-token.outputs.enc_token }}
+          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
+
+      - name: Clone the source repo
+        if: always()
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_SRC }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Remove branch and tag from the source repository
+        if: always()
+        working-directory: ${{ env.REPO_SRC }}
+        run: |
+          git push origin --delete ${BRANCH}
+          git push origin --delete tag ${TAG}
+
+      - name: Clone the destination repo
+        if: always()
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
+          token: ${{ steps.decrypt-token.outputs.token }}
+
+      - name: Remove branch and tag from the destination repository
+        if: always()
+        working-directory: ${{ env.REPO_DST }}
+        run: |
+          git push origin --delete ${BRANCH}
+          git push origin --delete tag ${TAG}
+
+      - name: Revoke GitHub App token
+        if: always()
+        env:
+          GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
+        run: gh api -X DELETE /installation/token
