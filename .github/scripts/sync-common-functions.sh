@@ -1,13 +1,11 @@
-#!/usr/bin/env bash
+# shellcheck shell=bash
 #
-# Common helpers shared by sync-branches.sh and sync-tags.sh. Intended to be sourced, not executed
-# directly.
+# Common helpers shared by sync-branches.sh and sync-tags.sh.
 
-# Emit an error and exit with the given status (default 2 for usage/config errors).
+# Emit an error and exit.
 die() {
-    local status="${2:-2}"
     echo "::error::$1" >&2
-    exit "${status}"
+    exit 1
 }
 
 # Apply the defaults shared by all sync scripts. These match what is set in the workflow file, so
@@ -44,37 +42,29 @@ add_authenticated_remote() {
         "AUTHORIZATION: basic $(printf 'x-access-token:%s' "${GH_TOKEN}" | base64 | tr -d '\n')"
 }
 
-# Validate configuration shared by all sync scripts: GH_TOKEN, SOURCE_REPO, DEST_REPO, DRY_RUN,
-# FORCE, and git presence.
+# Validate configuration shared by all sync scripts.
 validate_common_config() {
-    [ -n "${GH_TOKEN:-}" ] || die "GH_TOKEN is required but not set." 2
-    [ -n "${SOURCE_REPO:-}" ] || die "SOURCE_REPO is required but not set." 2
-    [ -n "${DEST_REPO:-}" ] || die "DEST_REPO is required but not set." 2
+    [ -n "${GH_TOKEN:-}" ] || die "GH_TOKEN is required but not set."
+    [ -n "${SOURCE_REPO:-}" ] || die "SOURCE_REPO is required but not set."
+    [ -n "${DEST_REPO:-}" ] || die "DEST_REPO is required but not set."
 
     case "${DRY_RUN}" in
         true | false) ;;
-        *) die "DRY_RUN must be 'true' or 'false', got '${DRY_RUN}'." 2 ;;
+        *) die "DRY_RUN must be 'true' or 'false', got '${DRY_RUN}'." ;;
     esac
 
     case "${FORCE}" in
         true | false) ;;
-        *) die "FORCE must be 'true' or 'false', got '${FORCE}'." 2 ;;
+        *) die "FORCE must be 'true' or 'false', got '${FORCE}'." ;;
     esac
-
-    command -v git >/dev/null 2>&1 || die "git is required but not found on PATH." 2
 }
 
-# Initialize the working repository and wire up the authenticated remotes. Reachability is not
-# checked here, because if the first real fetch against each remote (in fetch_branches/fetch_tags)
-# fails it will provide a clear message if the repository is unreachable or the token is invalid, so
-# checking it here would be redundant.
+# Initialize a fresh working repository in a temporary directory and wire up the authenticated
+# remotes.
 setup_working_repo() {
-    if [ -z "${WORKDIR:-}" ]; then
-        WORKDIR="$(mktemp -d)"
-        trap 'rm -rf "${WORKDIR}"' EXIT
-    fi
-    mkdir -p "${WORKDIR}"
-    cd "${WORKDIR}" || exit
+    WORKDIR="$(mktemp -d)"
+    trap 'rm -rf "${WORKDIR}"' EXIT
+    cd "${WORKDIR}"
 
     git init --quiet
     # Both remotes carry the token; a public source simply ignores it as long as the token is valid.

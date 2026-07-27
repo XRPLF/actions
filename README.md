@@ -5,15 +5,18 @@ Reusable workflows and actions for XRPLF repos
 ## Available Actions
 
 - `cleanup-workspace`: Cleans up the GitHub Actions workspace, should be used for self-hosted runners before running any steps.
-- `clone-repo`: Clones a repository authenticated with a token, so that subsequent plain git commands work without additional setup.
-- `configure-git`: Configures the git user identity (name and email) for the current job.
-- `configure-github-app`: Creates a token for a GitHub App and exposes its git user identity, for use with `configure-git`.
 - `create-issue`: Creates an issue in the repository with a specified title and body.
 - `decrypt-token`: Base64-decodes and GPG-decrypts a token.
 - `encrypt-token`: GPG-encrypts and base64-encodes a token.
 - `get-nproc`: Retrieves the number of processing units available on the runner.
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.
+
+## Available Git Actions
+
+- `clone-repo`: Clones a repository authenticated with a token, so that subsequent plain git commands work without additional setup.
+- `configure-git`: Configures the git user identity (name and email) for the current job.
+- `configure-github-app`: Creates a token for a GitHub App and exposes its git user identity, for use with `configure-git`.
 
 ## Available Reusable Workflows
 

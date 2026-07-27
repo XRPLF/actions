@@ -1,7 +1,7 @@
-# This workflow can be used to synchronize branches and tags between two repositories. By default,
-# existing destination branches are fast-forwarded to match the source, but this can be changed to
-# overwrite (force-push) diverged branches for manual runs, as well as to perform a dry run. Missing
-# branches are always created. Tags are synced after all branch jobs complete.
+# This workflow can be used to synchronize branches and tags between two repositories. Existing
+# destination branches are fast-forwarded to match the source, and missing branches are created. A
+# branch that has diverged from the source is never overwritten; the run fails instead. A dry run can
+# be performed to report what would change. Tags are synced after all branch jobs complete.
 name: Synchronize branches and tags between two repositories
 
 on:
@@ -21,10 +21,6 @@ on:
         required: true
       dry_run:
         description: "Perform a dry run: report what would change without pushing anything."
-        type: boolean
-        default: false
-      force:
-        description: "Overwrite (force-push) destination branches if they have diverged from the source."
         type: boolean
         default: false
     secrets:
@@ -90,9 +86,8 @@ jobs:
       - name: Sync branch
         env:
           GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
-          BRANCH: ${{ matrix.branch }}
+          BRANCHES_GLOB: ${{ matrix.branch }}
           DRY_RUN: ${{ inputs.dry_run }}
-          FORCE: ${{ inputs.force }}
           SOURCE_REPO: ${{ inputs.source }}
           DEST_REPO: ${{ inputs.destination }}
         run: .github/scripts/sync-branches.sh
@@ -122,7 +117,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
           DRY_RUN: ${{ inputs.dry_run }}
-          FORCE: ${{ inputs.force }}
           SOURCE_REPO: ${{ inputs.source }}
           DEST_REPO: ${{ inputs.destination }}
         run: .github/scripts/sync-tags.sh

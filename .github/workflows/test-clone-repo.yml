@@ -20,40 +20,55 @@ jobs:
   test-clone-repo:
     runs-on: ubuntu-latest
 
+    # The push check below needs write access to be able to verify that the token persisted by the
+    # action actually authenticates. Nothing is ever written, as the push is a dry run.
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Test clone-repo
+      # The clone lands in a directory named after the repository. GITHUB_REPOSITORY is used instead
+      # of github.event.repository.name, since the latter is not populated for schedule-triggered
+      # runs, and is exposed as an env var so every check below can use it as its working directory.
+      - name: Determine the expected clone directory
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> "${GITHUB_ENV}"
+
+      - name: Run clone-repo
         uses: ./clone-repo
         with:
           repository: ${{ github.repository }}
           token: ${{ github.token }}
 
-      - name: Confirm results
-        env:
-          # Use github.repository instead of github.event.repository.name, since the latter is not
-          # populated for schedule-triggered runs.
-          REPO_NAME: ${{ github.repository }}
-        run: |
-          REPO_NAME="${REPO_NAME#*/}"
-          cd "${REPO_NAME}"
+      - name: Confirm the repository was cloned into a directory named after it
+        run: test -d "${REPO_NAME}"
 
-          if [[ ! -d ".git" ]]; then
-            echo "Expected the repository to be cloned into a directory named '${REPO_NAME}'"
-            exit 1
-          fi
-          if [[ ! -f "README.md" ]]; then
-            echo "Expected the cloned repository to contain README.md"
-            exit 1
-          fi
+      - name: Confirm the clone is a git repository
+        working-directory: ${{ env.REPO_NAME }}
+        run: test -d ".git"
 
-          # The auth header must be persisted into .git/config so subsequent plain git commands
-          # (e.g. push) against this clone are authenticated without any further setup.
-          if ! git config --local --get-regexp '^http\..*\.extraheader$' >/dev/null; then
-            echo "Expected an authenticated HTTP extraheader to be configured on the clone"
-            exit 1
-          fi
+      - name: Confirm the working tree was checked out
+        working-directory: ${{ env.REPO_NAME }}
+        run: test -f README.md
 
-          # A plain git command (not routed through gh) should succeed against this clone.
-          git fetch origin
+      # The auth header must be persisted into .git/config so subsequent plain git commands (e.g.
+      # push) against this clone are authenticated without any further setup. Only the config key
+      # names are printed, to keep the header value out of the logs.
+      - name: Confirm the authenticated HTTP extraheader is persisted
+        working-directory: ${{ env.REPO_NAME }}
+        run: git config --local --name-only --get-regexp '^http\..*\.extraheader$'
+
+      # The token belongs in the extraheader, not in the remote URL, where git would otherwise leak
+      # it into its error messages.
+      - name: Confirm the token is not embedded in the remote URL
+        working-directory: ${{ env.REPO_NAME }}
+        run: test "$(git remote get-url origin)" = "https://github.com/${GITHUB_REPOSITORY}"
+
+      # A push is what actually proves the persisted credential works: unlike a fetch, which succeeds
+      # anonymously on a public repository, a push is rejected without a token that has write access.
+      # --dry-run means nothing is written, and the refspec targets the branch that was just cloned,
+      # so the push is a no-op even if it were to run for real.
+      - name: Confirm a plain git command is authenticated against the clone
+        working-directory: ${{ env.REPO_NAME }}
+        run: git push --dry-run origin "HEAD:refs/heads/$(git rev-parse --abbrev-ref HEAD)"

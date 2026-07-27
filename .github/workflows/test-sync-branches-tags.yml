@@ -137,7 +137,6 @@ jobs:
       destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
       branches: ${{ needs.create-branch-tag.outputs.branch }}
       dry_run: true
-      force: false
 
   # Verify that the test branch and tag do not exist in the destination repo.
   verify-dry-run:
@@ -178,8 +177,8 @@ jobs:
             exit 1
           fi
 
-  # Do a regular (non-dry-run, non-force) sync, which will create the test branch and tag in the
-  # destination repository.
+  # Do a regular (non-dry-run) sync, which will create the test branch and tag in the destination
+  # repository.
   sync-regular:
     name: Sync branches and tags (regular)
     uses: ./.github/workflows/sync-branches-tags.yml
@@ -195,7 +194,6 @@ jobs:
       destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
       branches: ${{ needs.create-branch-tag.outputs.branch }}
       dry_run: false
-      force: false
 
   # Verify that the test branch and tag now exist in the destination repository.
   verify-regular:
@@ -234,104 +232,6 @@ jobs:
             exit 1
           fi
 
-  # Create a conflict in the destination repository by adding a commit to the test branch.
-  create-conflict:
-    name: Create a conflict in the destination repository
-    runs-on: ubuntu-latest
-    needs:
-      - get-token
-      - create-branch-tag
-      - verify-regular
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Decrypt GitHub App token
-        id: decrypt-token
-        uses: ./decrypt-token
-        with:
-          token: ${{ needs.get-token.outputs.enc_token }}
-          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
-
-      - name: Configure git
-        uses: ./configure-git
-        with:
-          user_name: ${{ needs.get-token.outputs.user_name }}
-          user_email: ${{ needs.get-token.outputs.user_email }}
-
-      - name: Clone the destination repo
-        uses: ./clone-repo
-        with:
-          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
-          token: ${{ steps.decrypt-token.outputs.token }}
-
-      - name: Create a conflict in the destination repository
-        id: conflict-hash
-        working-directory: ${{ env.REPO_DST }}
-        run: |
-          git checkout ${BRANCH}
-          git commit --allow-empty -m "Conflict commit"
-          git push --set-upstream origin ${BRANCH}
-          COMMIT=$(git rev-parse HEAD)
-          echo "commit=${COMMIT}" >> "${GITHUB_OUTPUT}"
-    outputs:
-      commit: ${{ steps.conflict-hash.outputs.commit }}
-
-  # Do a force sync to overwrite the conflict created above.
-  sync-force:
-    name: Sync branches and tags (force)
-    needs:
-      - get-token
-      - create-branch-tag
-      - create-conflict
-    uses: ./.github/workflows/sync-branches-tags.yml
-    secrets:
-      gh_token: ${{ needs.get-token.outputs.enc_token }}
-      gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
-    with:
-      source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
-      destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
-      branches: ${{ needs.create-branch-tag.outputs.branch }}
-      dry_run: false
-      force: true
-
-  # Verify that the conflict has been overwritten.
-  verify-force:
-    name: Verify (force)
-    runs-on: ubuntu-latest
-    needs:
-      - get-token
-      - create-branch-tag
-      - create-conflict
-      - sync-force
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-
-      - name: Decrypt GitHub App token
-        id: decrypt-token
-        uses: ./decrypt-token
-        with:
-          token: ${{ needs.get-token.outputs.enc_token }}
-          gpg_passphrase: ${{ secrets.TEST_SYNC_BRANCHES_TAGS_GPG_PASSPHRASE }}
-
-      - name: Clone the destination repo
-        uses: ./clone-repo
-        with:
-          repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
-          token: ${{ steps.decrypt-token.outputs.token }}
-
-      - name: Verify that the conflict no longer exists in the destination repo
-        working-directory: ${{ env.REPO_DST }}
-        env:
-          COMMIT: ${{ needs.create-conflict.outputs.commit }}
-        run: |
-          git checkout ${BRANCH}
-          if git merge-base --is-ancestor ${COMMIT} HEAD; then
-            echo "Branch ${BRANCH} contains commit ${COMMIT}, but shouldn't."
-            exit 1
-          fi
-
   # Clean up the test branch and tag from both repositories, and revoke the GitHub App token. Run
   # the cleanup job even if previous jobs failed, and also run some of the steps unconditionally, so
   # they also run if previous jobs failed.
@@ -342,7 +242,7 @@ jobs:
     needs:
       - get-token
       - create-branch-tag
-      - verify-force
+      - verify-regular
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

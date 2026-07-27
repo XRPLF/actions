@@ -30,7 +30,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      - name: Test encrypt-token
+      - name: Run encrypt-token
         id: encrypt
         uses: ./encrypt-token
         with:
@@ -56,14 +56,14 @@ jobs:
             exit 1
           fi
 
-      - name: Test decrypt-token with a GPG-encrypted token
+      - name: Run decrypt-token with a GPG-encrypted token
         id: decrypt-encrypted
         uses: ./decrypt-token
         with:
           token: ${{ steps.encrypt.outputs.token }}
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
 
-      - name: Test decrypt-token with a plain (unencrypted) token
+      - name: Run decrypt-token with a plain (unencrypted) token
         id: decrypt-plain
         uses: ./decrypt-token
         with:
