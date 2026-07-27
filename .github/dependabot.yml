@@ -18,3 +18,7 @@ updates:
     commit-message:
       prefix: "ci: [DEPENDABOT] "
     target-branch: main
+    groups:
+      github-actions:
+        patterns:
+          - "*"

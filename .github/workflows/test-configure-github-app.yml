@@ -17,7 +17,20 @@ defaults:
     shell: bash
 
 jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has_secrets: ${{ steps.check.outputs.has_secrets }}
+    steps:
+      - name: Check if GitHub App secrets are available
+        id: check
+        env:
+          HAS_SECRETS: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID != '' && secrets.XRPLF_GITHUB_APP_PRIVATE_KEY != '' }}
+        run: echo "has_secrets=${HAS_SECRETS}" >> "${GITHUB_OUTPUT}"
+
   test-configure-github-app:
+    needs: check-secrets
+    if: ${{ needs.check-secrets.outputs.has_secrets == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
