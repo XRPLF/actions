@@ -8,8 +8,9 @@ die() {
     exit 1
 }
 
-# Apply the defaults shared by all sync scripts. These match what is set in the workflow file, so
-# the scripts can also be run locally. Keep in sync with the workflow file.
+# Apply the defaults shared by all sync scripts, so that only the variables that differ from the
+# default need to be set. The workflow passes DRY_RUN explicitly; FORCE is only ever set when running
+# a script directly, as the workflow deliberately does not expose force-pushing.
 set_common_defaults() {
     DRY_RUN="${DRY_RUN:-false}"
     FORCE="${FORCE:-false}"
@@ -30,9 +31,11 @@ push_ref() {
 # is passed via an HTTP Authorization header rather than embedded in the remote URL. Embedding would
 # persist the credential in .git/config and, because git prints the remote URL in its error
 # messages, risk leaking it into CI logs. Passing it as an 'extraheader' keeps git's output limited
-# to 'https://github.com/<repo>'. This mirrors how actions/checkout authenticates. The 'tr -d'
-# command strips any line breaks base64 may insert so the header stays on one line. A public
-# repository ignores a valid token, so the same header is used for both.
+# to 'https://github.com/<repo>'. The header is scoped to the single repository rather than to
+# github.com as a whole, so that the token for one remote is never sent to the other. The 'tr -d'
+# command strips the line breaks GNU base64 inserts (it wraps at 76 columns, and an encoded token
+# exceeds that) so the header stays on one line. A public repository ignores a valid token, so the
+# same header is used for both.
 # Args: <remote-name> <owner/repo>
 add_authenticated_remote() {
     local remote="$1" repo="$2"

@@ -37,24 +37,20 @@ jobs:
           token: ${{ env.TEST_TOKEN }}
           gpg_passphrase: ${{ env.GPG_PASSPHRASE }}
 
-      - name: Confirm encryption results
+      - name: Confirm an encrypted token was returned
         env:
           ENC_TOKEN: ${{ steps.encrypt.outputs.token }}
-        run: |
-          if [[ -z "${ENC_TOKEN}" ]]; then
-            echo "Expected token output to be set"
-            exit 1
-          fi
-          if [[ "${ENC_TOKEN}" == "test-token-value" ]]; then
-            echo "Expected token to be encrypted, but it was returned unchanged"
-            exit 1
-          fi
+        run: test -n "${ENC_TOKEN}"
 
-          # The output must be valid base64.
-          if ! echo -n "${ENC_TOKEN}" | base64 -d >/dev/null; then
-            echo "Expected token to be valid base64"
-            exit 1
-          fi
+      - name: Confirm the token was not returned unchanged
+        env:
+          ENC_TOKEN: ${{ steps.encrypt.outputs.token }}
+        run: test "${ENC_TOKEN}" != "${TEST_TOKEN}"
+
+      - name: Confirm the encrypted token is valid base64
+        env:
+          ENC_TOKEN: ${{ steps.encrypt.outputs.token }}
+        run: echo -n "${ENC_TOKEN}" | base64 -d >/dev/null
 
       - name: Run decrypt-token with a GPG-encrypted token
         id: decrypt-encrypted
@@ -69,16 +65,12 @@ jobs:
         with:
           token: ${{ env.TEST_TOKEN }}
 
-      - name: Confirm decryption results
+      - name: Confirm the decrypted token matches the original
         env:
           DECRYPTED: ${{ steps.decrypt-encrypted.outputs.token }}
-          PASSED_THROUGH: ${{ steps.decrypt-plain.outputs.token }}
-        run: |
-          if [[ "${DECRYPTED}" != "${TEST_TOKEN}" ]]; then
-            echo 'Expected the decrypted token to match the original.'
-            exit 1
-          fi
-          if [[ "${PASSED_THROUGH}" != "${TEST_TOKEN}" ]]; then
-            echo 'Expected the passed-through token to match the original.'
-            exit 1
-          fi
+        run: test "${DECRYPTED}" = "${TEST_TOKEN}"
+
+      - name: Confirm a plain token is passed through unchanged
+        env:
+          PLAIN: ${{ steps.decrypt-plain.outputs.token }}
+        run: test "${PLAIN}" = "${TEST_TOKEN}"

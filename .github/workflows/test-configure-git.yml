@@ -30,16 +30,12 @@ jobs:
           user_name: Test User
           user_email: test-user@example.com
 
-      - name: Confirm results
+      - name: Confirm git user.name was configured
         env:
           USER_NAME: Test User
+        run: test "$(git config --global user.name)" = "${USER_NAME}"
+
+      - name: Confirm git user.email was configured
+        env:
           USER_EMAIL: test-user@example.com
-        run: |
-          if [[ "$(git config --global user.name)" != "${USER_NAME}" ]]; then
-            echo "Unexpected git user.name"
-            exit 1
-          fi
-          if [[ "$(git config --global user.email)" != "${USER_EMAIL}" ]]; then
-            echo "Unexpected git user.email"
-            exit 1
-          fi
+        run: test "$(git config --global user.email)" = "${USER_EMAIL}"

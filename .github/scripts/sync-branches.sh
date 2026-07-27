@@ -67,9 +67,10 @@ fetch_branches() {
     [ -n "$(git for-each-ref "${SOURCE_REF}/")" ] ||
         die "Source branch(es) '${BRANCHES_GLOB}' not found in '${SOURCE_REPO}'."
 
-    # A branch that does not yet exist on the destination is expected: it is created below. Such a
-    # fetch fails, so failures are ignored here; a genuine problem (unreachable remote, invalid
-    # token) surfaces when pushing.
+    # A branch that does not yet exist on the destination is expected: it is created below. A literal
+    # branch name that is missing makes this fetch fail (a glob matching nothing succeeds), so
+    # failures are ignored here; a genuine problem such as an unreachable remote or an invalid token
+    # surfaces when pushing.
     echo "Fetching destination branch(es): ${BRANCHES_GLOB}"
     git fetch --quiet "${DEST_REMOTE}" \
         "+${BRANCH_REF}/${BRANCHES_GLOB}:${DEST_REF}/${BRANCHES_GLOB}" || true

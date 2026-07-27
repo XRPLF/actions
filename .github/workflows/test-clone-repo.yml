@@ -67,8 +67,10 @@ jobs:
 
       # A push is what actually proves the persisted credential works: unlike a fetch, which succeeds
       # anonymously on a public repository, a push is rejected without a token that has write access.
-      # --dry-run means nothing is written, and the refspec targets the branch that was just cloned,
-      # so the push is a no-op even if it were to run for real.
+      # Nothing is written, as --dry-run stops before any ref is updated. The target is a branch name
+      # that does not exist, so the push is always a fast-forwardable ref creation; pushing to an
+      # existing branch would instead be rejected as non-fast-forward whenever HEAD is not at its tip,
+      # which is a failure unrelated to authentication.
       - name: Confirm a plain git command is authenticated against the clone
         working-directory: ${{ env.REPO_NAME }}
-        run: git push --dry-run origin "HEAD:refs/heads/$(git rev-parse --abbrev-ref HEAD)"
+        run: git push --dry-run origin "HEAD:refs/heads/ci-auth-probe-${GITHUB_RUN_ID}"

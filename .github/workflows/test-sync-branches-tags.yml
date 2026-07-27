@@ -163,19 +163,15 @@ jobs:
           repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
           token: ${{ steps.decrypt-token.outputs.token }}
 
-      - name: Verify that the test branch and tag do not exist in the destination repo
+      # A plain clone only checks out the default branch under refs/heads; every other branch
+      # (including this test branch) is only present as a remote-tracking ref.
+      - name: Confirm the test branch was not created by the dry run
         working-directory: ${{ env.REPO_DST }}
-        run: |
-          # A plain clone only checks out the default branch under refs/heads; every other branch
-          # (including this test branch) is only present as a remote-tracking ref.
-          if git show-ref --verify --quiet refs/remotes/origin/${BRANCH}; then
-            echo "Branch ${BRANCH} exists in ${REPO_DST}, but should not."
-            exit 1
-          fi
-          if git show-ref --verify --quiet refs/tags/${TAG}; then
-            echo "Tag ${TAG} exists in ${REPO_DST}, but should not."
-            exit 1
-          fi
+        run: '! git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"'
+
+      - name: Confirm the test tag was not created by the dry run
+        working-directory: ${{ env.REPO_DST }}
+        run: '! git show-ref --verify --quiet "refs/tags/${TAG}"'
 
   # Do a regular (non-dry-run) sync, which will create the test branch and tag in the destination
   # repository.
@@ -220,17 +216,13 @@ jobs:
           repository: ${{ github.repository_owner }}/${{ env.REPO_DST }}
           token: ${{ steps.decrypt-token.outputs.token }}
 
-      - name: Verify that the test branch and tag exist in the destination repo
+      - name: Confirm the test branch was synchronized to the destination
         working-directory: ${{ env.REPO_DST }}
-        run: |
-          if ! git show-ref --verify --quiet refs/remotes/origin/${BRANCH}; then
-            echo "Branch ${BRANCH} does not exist in ${REPO_DST}, but should."
-            exit 1
-          fi
-          if ! git show-ref --verify --quiet refs/tags/${TAG}; then
-            echo "Tag ${TAG} does not exist in ${REPO_DST}, but should."
-            exit 1
-          fi
+        run: git show-ref --verify --quiet "refs/remotes/origin/${BRANCH}"
+
+      - name: Confirm the test tag was synchronized to the destination
+        working-directory: ${{ env.REPO_DST }}
+        run: git show-ref --verify --quiet "refs/tags/${TAG}"
 
   # Clean up the test branch and tag from both repositories, and revoke the GitHub App token. Run
   # the cleanup job even if previous jobs failed, and also run some of the steps unconditionally, so
