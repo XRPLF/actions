@@ -19,7 +19,7 @@ defaults:
 jobs:
   test-configure-github-app:
     runs-on: ubuntu-latest
-    if: ${{ github.repository_owner == 'XRPLF' }}
+    if: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID && secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
     container:
       image: ghcr.io/xrplf/xrpld/nix-ubuntu:latest
 
