@@ -18,7 +18,7 @@ jobs:
   test-cleanup-before-checkout:
     strategy:
       matrix:
-        os: [macos15, dev-box-windows-2026]
+        os: [macos-26-apple-clang-21, dev-box-windows-2026]
 
     runs-on: ${{ matrix.os }}
 
