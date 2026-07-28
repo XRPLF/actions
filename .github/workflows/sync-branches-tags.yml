@@ -131,7 +131,7 @@ jobs:
     name: Synchronize tags
     needs:
       - get-branch-globs
-      - sync-branch
+      - sync-branch-glob
     runs-on: ubuntu-latest
     steps:
       # Explicitly check out the current repository so we can reference the local files.
