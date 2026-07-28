@@ -8,15 +8,15 @@
 # Configuration is supplied via environment variables:
 #
 #   Required:
-#     GH_TOKEN       Token with read access to the source repository and write access to the
-#                    destination. A public repository ignores the token as long as it is valid. When
-#                    running this script locally, your personal access token must have at least the
-#                    "repo", "read:org" (for branches in organization repos), and "workflow" scopes.
-#     SOURCE_REPO    Source repository, as "owner/repo" (github.com is assumed).
-#     DEST_REPO      Destination repository, as "owner/repo" (github.com is assumed).
-#     BRANCHES_GLOB  Glob matching the branches to synchronize. A plain branch name is a glob that
-#                    matches only itself; a wider glob may match several branches, all of which are
-#                    synchronized.
+#     GH_TOKEN     Token with read access to the source repository and write access to the
+#                  destination. A public repository ignores the token as long as it is valid. When
+#                  running this script locally, your personal access token must have at least the
+#                  "repo", "read:org" (for branches in organization repos), and "workflow" scopes.
+#     SOURCE_REPO  Source repository, as "owner/repo" (github.com is assumed).
+#     DEST_REPO    Destination repository, as "owner/repo" (github.com is assumed).
+#     BRANCH_GLOB  Glob matching the branch(es) to synchronize. A plain branch name is a glob that
+#                  matches only itself; a wider glob may match several branches, all of which are
+#                  synchronized.
 #
 #   Optional:
 #     DRY_RUN        "true" to report changes without pushing.
@@ -38,7 +38,7 @@ source "${BASH_SOURCE[0]%/*}/sync-common-functions.sh"
 # --- Configuration -----------------------------------------------------------------------------
 
 set_common_defaults
-BRANCHES_GLOB="${BRANCHES_GLOB:-}"
+BRANCH_GLOB="${BRANCH_GLOB:-}"
 
 # Internal git ref/remote names used within the working repository.
 BRANCH_REF="refs/heads"
@@ -52,28 +52,28 @@ REMOTE_REF_PREFIX="${BRANCH_REF}"
 
 validate_config() {
     validate_common_config
-    [ -n "${BRANCHES_GLOB}" ] || die "BRANCHES_GLOB must be a non-empty branch name or glob."
+    [ -n "${BRANCH_GLOB}" ] || die "BRANCH_GLOB must be a non-empty branch name or glob."
 }
 
 # Fetch the branches matching the glob from both remotes into local tracking refs. The '+' prefix
 # force-updates the tracking refs so they always reflect each remote.
 fetch_branches() {
-    echo "Fetching source branch(es): ${BRANCHES_GLOB}"
+    echo "Fetching source branch(es): ${BRANCH_GLOB}"
     git fetch --quiet "${SOURCE_REMOTE}" \
-        "+${BRANCH_REF}/${BRANCHES_GLOB}:${SOURCE_REF}/${BRANCHES_GLOB}"
+        "+${BRANCH_REF}/${BRANCH_GLOB}:${SOURCE_REF}/${BRANCH_GLOB}"
 
     # A glob that matches no refs makes 'git fetch' succeed having fetched nothing, so a mistyped
-    # BRANCHES_GLOB would otherwise go undetected.
+    # BRANCH_GLOB would otherwise go undetected.
     [ -n "$(git for-each-ref "${SOURCE_REF}/")" ] ||
-        die "Source branch(es) '${BRANCHES_GLOB}' not found in '${SOURCE_REPO}'."
+        die "Source branch(es) '${BRANCH_GLOB}' not found in '${SOURCE_REPO}'."
 
     # A branch that does not yet exist on the destination is expected: it is created below. A literal
     # branch name that is missing makes this fetch fail (a glob matching nothing succeeds), so
     # failures are ignored here; a genuine problem such as an unreachable remote or an invalid token
     # surfaces when pushing.
-    echo "Fetching destination branch(es): ${BRANCHES_GLOB}"
+    echo "Fetching destination branch(es): ${BRANCH_GLOB}"
     git fetch --quiet "${DEST_REMOTE}" \
-        "+${BRANCH_REF}/${BRANCHES_GLOB}:${DEST_REF}/${BRANCHES_GLOB}" || true
+        "+${BRANCH_REF}/${BRANCH_GLOB}:${DEST_REF}/${BRANCH_GLOB}" || true
 }
 
 # Synchronize a single already-fetched ref onto the destination.

@@ -22,7 +22,7 @@ jobs:
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
-          - os: macos15
+          - os: macos-26-apple-clang-21
           - os: dev-box-windows-2026
 
     runs-on: ${{ matrix.os }}
@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run prepare-runner action
         uses: ./prepare-runner
@@ -53,7 +53,7 @@ jobs:
           conan --version
           ccache --version
 
-          if [[ "${{ matrix.os }}" == "macos15" ]]; then
+          if [[ "${{ matrix.os }}" == "macos-26-apple-clang-21" ]]; then
               colima --version
               docker --version
           fi
@@ -64,10 +64,8 @@ jobs:
           cargo --version
           rustc --version
 
-          if [[ "${{ runner.os }}" != 'Windows' ]]; then
-            cargo audit --version
-            cargo clippy --version
-            cargo fmt --version
-            cargo llvm-cov --version
-            cargo nextest --version
-          fi
+          cargo audit --version
+          cargo clippy --version
+          cargo fmt --version
+          cargo llvm-cov --version
+          cargo nextest --version

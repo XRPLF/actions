@@ -24,8 +24,8 @@ on:
         description: "Destination repository to synchronize to (e.g. owner/dst)."
         type: string
         required: true
-      branches:
-        description: "Comma-separated branch names/globs to synchronize."
+      branch_globs:
+        description: "Comma-separated branch globs to synchronize."
         type: string
         required: true
       dry_run:
@@ -45,30 +45,30 @@ defaults:
     shell: bash
 
 jobs:
-  # Determine the list of branches to synchronize into a JSON array that the matrix below expands,
-  # and the owner and repository names the GitHub App token must be scoped to.
-  get-branches:
-    name: Get branches
+  # Determine the list of branch globs to synchronize into a JSON array that the matrix below
+  # expands, and the owner and repository names the GitHub App token must be scoped to.
+  get-branch-globs:
+    name: Get branch globs
     runs-on: ubuntu-latest
     outputs:
-      branches: ${{ steps.list.outputs.branches }}
+      branch_globs: ${{ steps.globs.outputs.branch_globs }}
       owner: ${{ steps.repos.outputs.owner }}
       repositories: ${{ steps.repos.outputs.repositories }}
     steps:
       - name: Determine branch list
-        id: list
+        id: globs
         env:
-          BRANCHES: ${{ inputs.branches }}
+          BRANCH_GLOBS: ${{ inputs.branch_globs }}
         # Convert the comma-separated list into the JSON array the matrix expects. Trim whitespace
         # and drop empty entries to avoid matrix jobs with blank branch names.
         run: |
-          JSON="$(printf '%s' "${BRANCHES}" | jq --raw-input --compact-output \
-            'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))')"
+          JSON="$(printf '%s' "${BRANCH_GLOBS}" | jq --raw-input --compact-output \
+            '[splits(",") | gsub("^\\s+|\\s+$";"") | select(length > 0)]')"
           if [ "${JSON}" = "[]" ]; then
-            echo "::error::No branches to synchronize after parsing '${BRANCHES}'."
+            echo "::error::No branches to synchronize after parsing '${BRANCH_GLOBS}'."
             exit 1
           fi
-          echo "branches=${JSON}" >> "$GITHUB_OUTPUT"
+          echo "branch_globs=${JSON}" >> "$GITHUB_OUTPUT"
 
       - name: Confirm the source and destination share one owner
         env:
@@ -91,14 +91,14 @@ jobs:
 
   # Sync each branch in its own job so they can run in parallel.
   sync-branch:
-    name: Synchronize ${{ matrix.branch }}
-    needs: get-branches
+    name: Synchronize ${{ matrix.branch_glob }}
+    needs: get-branch-globs
     runs-on: ubuntu-latest
     strategy:
       # Do not cancel the other branches if one fails; each branch is synchronized independently.
       fail-fast: false
       matrix:
-        branch: ${{ fromJSON(needs.get-branches.outputs.branches) }}
+        branch_glob: ${{ fromJSON(needs.get-branch-globs.outputs.branch_globs) }}
     steps:
       # Explicitly check out the current repository so we can reference the local files.
       - name: Checkout workflow repository
@@ -113,13 +113,13 @@ jobs:
         with:
           client_id: ${{ secrets.app_client_id }}
           private_key: ${{ secrets.app_private_key }}
-          owner: ${{ needs.get-branches.outputs.owner }}
-          repositories: ${{ needs.get-branches.outputs.repositories }}
+          owner: ${{ needs.get-branch-globs.outputs.owner }}
+          repositories: ${{ needs.get-branch-globs.outputs.repositories }}
 
       - name: Sync branch
         env:
           GH_TOKEN: ${{ steps.configure-app.outputs.app_token }}
-          BRANCHES_GLOB: ${{ matrix.branch }}
+          BRANCH_GLOB: ${{ matrix.branch_glob }}
           DRY_RUN: ${{ inputs.dry_run }}
           SOURCE_REPO: ${{ inputs.source }}
           DEST_REPO: ${{ inputs.destination }}
@@ -130,7 +130,7 @@ jobs:
   sync-tags:
     name: Synchronize tags
     needs:
-      - get-branches
+      - get-branch-globs
       - sync-branch
     runs-on: ubuntu-latest
     steps:
@@ -147,8 +147,8 @@ jobs:
         with:
           client_id: ${{ secrets.app_client_id }}
           private_key: ${{ secrets.app_private_key }}
-          owner: ${{ needs.get-branches.outputs.owner }}
-          repositories: ${{ needs.get-branches.outputs.repositories }}
+          owner: ${{ needs.get-branch-globs.outputs.owner }}
+          repositories: ${{ needs.get-branch-globs.outputs.repositories }}
 
       - name: Sync tags
         env:

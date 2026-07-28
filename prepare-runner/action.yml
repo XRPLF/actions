@@ -74,7 +74,7 @@ runs:
             --profile minimal
         fi
 
-    - name: Install cargo tools using cargo-binstall (macOS)
+    - name: Install cargo-binstall (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
@@ -87,11 +87,6 @@ runs:
           curl --proto '=https' --tlsv1.2 -sSf -L \
             https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
         fi
-
-        cargo binstall --no-confirm \
-          cargo-audit \
-          cargo-llvm-cov \
-          cargo-nextest
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}
@@ -129,6 +124,24 @@ runs:
         curl --proto '=https' --tlsv1.2 -sSf -o rustup-init.exe https://win.rustup.rs/x86_64
         ./rustup-init.exe -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
         rm -f rustup-init.exe
+
+    - name: Install cargo tools (macOS and Windows)
+      if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        # Note: cargo-binstall cannot be bootstrapped on Windows, as its
+        # installer is a PowerShell script that antivirus software flags as
+        # malicious. Build from source there instead, which is slow but only
+        # has to happen once per runner.
+        for TOOL in cargo-audit cargo-llvm-cov cargo-nextest; do
+          if command -v "$TOOL" >/dev/null 2>&1; then
+            echo "$TOOL already installed; skipping installation"
+          elif command -v cargo-binstall >/dev/null 2>&1; then
+            cargo binstall --no-confirm "$TOOL"
+          else
+            cargo install --locked "$TOOL"
+          fi
+        done
 
     - name: Install Rust toolchain (macOS and Windows)
       if: ${{ runner.os == 'macOS' || runner.os == 'Windows' }}

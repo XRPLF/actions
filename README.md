@@ -24,7 +24,6 @@ Reusable workflows and actions for XRPLF repos
 - `determine-tidy-files.yml`: Determines which files have been modified in a Pull Request and sets an output variables with the list of those files.
 - `pre-commit.yml`: Runs `pre-commit` checks on code changes.
 - `pre-commit-autoupdate.yml`: Runs `pre-commit autoupdate` to update pre-commit hooks.
-- `reusable-build-docker-image.yml`: Builds a single-platform Docker image and pushes it to a container registry.
 - `sync-branches-tags.yml`: Synchronizes branches and tags between two repositories.
 
 ## Maintenance Tools
