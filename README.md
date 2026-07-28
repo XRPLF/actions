@@ -6,8 +6,6 @@ Reusable workflows and actions for XRPLF repos
 
 - `cleanup-workspace`: Cleans up the GitHub Actions workspace, should be used for self-hosted runners before running any steps.
 - `create-issue`: Creates an issue in the repository with a specified title and body.
-- `decrypt-token`: Base64-decodes and GPG-decrypts a token.
-- `encrypt-token`: GPG-encrypts and base64-encodes a token.
 - `get-nproc`: Retrieves the number of processing units available on the runner.
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.

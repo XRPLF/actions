@@ -1,7 +1,16 @@
 # This workflow can be used to synchronize branches and tags between two repositories. Existing
 # destination branches are fast-forwarded to match the source, and missing branches are created. A
-# branch that has diverged from the source is never overwritten; the run fails instead. A dry run can
-# be performed to report what would change. Tags are synced after all branch jobs complete.
+# branch that has diverged from the source is never overwritten; the run fails instead. A dry run
+# can be performed to report what would change. Tags are synced after all branch jobs complete.
+#
+# Authentication uses a GitHub App: every job mints its own installation token from the App
+# credentials, scoped to the source and destination repositories, and that token is revoked when the
+# job completes. A token is therefore never passed between jobs, which is not possible anyway, as
+# the runner redacts secrets from job outputs rather than forwarding them.
+#
+# Because an installation token is scoped to a single account, the source and destination must be
+# owned by the same user or organization, and the App must be installed on it with access to both
+# repositories. Synchronizing repositories across two owners is not supported.
 name: Synchronize branches and tags between two repositories
 
 on:
@@ -24,32 +33,35 @@ on:
         type: boolean
         default: false
     secrets:
-      gh_token:
-        description: "GitHub token (optionally GPG-encrypted and base64-encoded) to use for authentication, which must have access to read from the source repo and write to the destination repo."
+      app_client_id:
+        description: "Client identifier of a GitHub App installed on both the source and destination repositories."
         required: true
-      gpg_passphrase:
-        description: "GPG passphrase to use for decrypting the token, if it is encrypted."
-        required: false
+      app_private_key:
+        description: "Private key of the GitHub App identified by app_client_id."
+        required: true
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  # Determine the list of branches to synchronize into a JSON array that the matrix below expands.
+  # Determine the list of branches to synchronize into a JSON array that the matrix below expands,
+  # and the owner and repository names the GitHub App token must be scoped to.
   get-branches:
     name: Get branches
     runs-on: ubuntu-latest
     outputs:
       branches: ${{ steps.list.outputs.branches }}
+      owner: ${{ steps.repos.outputs.owner }}
+      repositories: ${{ steps.repos.outputs.repositories }}
     steps:
       - name: Determine branch list
         id: list
         env:
           BRANCHES: ${{ inputs.branches }}
+        # Convert the comma-separated list into the JSON array the matrix expects. Trim whitespace
+        # and drop empty entries to avoid matrix jobs with blank branch names.
         run: |
-          # Convert the comma-separated list into the JSON array the matrix expects. Trim whitespace
-          # and drop empty entries to avoid matrix jobs with blank branch names.
           JSON="$(printf '%s' "${BRANCHES}" | jq --raw-input --compact-output \
             'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length > 0))')"
           if [ "${JSON}" = "[]" ]; then
@@ -57,6 +69,25 @@ jobs:
             exit 1
           fi
           echo "branches=${JSON}" >> "$GITHUB_OUTPUT"
+
+      - name: Confirm the source and destination share one owner
+        env:
+          SOURCE: ${{ inputs.source }}
+          DESTINATION: ${{ inputs.destination }}
+        run: |
+          if [ "${SOURCE%%/*}" != "${DESTINATION%%/*}" ]; then
+            echo "::error::Source '${SOURCE}' and destination '${DESTINATION}' must have the same owner."
+            exit 1
+          fi
+
+      - name: Determine the owner and repositories to scope the token to
+        id: repos
+        env:
+          SOURCE: ${{ inputs.source }}
+          DESTINATION: ${{ inputs.destination }}
+        run: |
+          echo "owner=${SOURCE%%/*}" >> "$GITHUB_OUTPUT"
+          echo "repositories=${SOURCE#*/},${DESTINATION#*/}" >> "$GITHUB_OUTPUT"
 
   # Sync each branch in its own job so they can run in parallel.
   sync-branch:
@@ -76,16 +107,18 @@ jobs:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
 
-      - name: Decrypt token
-        id: decrypt-token
-        uses: ./decrypt-token
+      - name: Configure GitHub App
+        id: configure-app
+        uses: ./configure-github-app
         with:
-          token: ${{ secrets.gh_token }}
-          gpg_passphrase: ${{ secrets.gpg_passphrase }}
+          client_id: ${{ secrets.app_client_id }}
+          private_key: ${{ secrets.app_private_key }}
+          owner: ${{ needs.get-branches.outputs.owner }}
+          repositories: ${{ needs.get-branches.outputs.repositories }}
 
       - name: Sync branch
         env:
-          GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
+          GH_TOKEN: ${{ steps.configure-app.outputs.app_token }}
           BRANCHES_GLOB: ${{ matrix.branch }}
           DRY_RUN: ${{ inputs.dry_run }}
           SOURCE_REPO: ${{ inputs.source }}
@@ -96,7 +129,9 @@ jobs:
   # a branch in the destination repository before the tag pointing to them arrives.
   sync-tags:
     name: Synchronize tags
-    needs: sync-branch
+    needs:
+      - get-branches
+      - sync-branch
     runs-on: ubuntu-latest
     steps:
       # Explicitly check out the current repository so we can reference the local files.
@@ -106,16 +141,18 @@ jobs:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
 
-      - name: Decrypt token
-        id: decrypt-token
-        uses: ./decrypt-token
+      - name: Configure GitHub App
+        id: configure-app
+        uses: ./configure-github-app
         with:
-          token: ${{ secrets.gh_token }}
-          gpg_passphrase: ${{ secrets.gpg_passphrase }}
+          client_id: ${{ secrets.app_client_id }}
+          private_key: ${{ secrets.app_private_key }}
+          owner: ${{ needs.get-branches.outputs.owner }}
+          repositories: ${{ needs.get-branches.outputs.repositories }}
 
       - name: Sync tags
         env:
-          GH_TOKEN: ${{ steps.decrypt-token.outputs.token }}
+          GH_TOKEN: ${{ steps.configure-app.outputs.app_token }}
           DRY_RUN: ${{ inputs.dry_run }}
           SOURCE_REPO: ${{ inputs.source }}
           DEST_REPO: ${{ inputs.destination }}

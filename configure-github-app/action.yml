@@ -9,8 +9,12 @@ inputs:
     description: The private key of the GitHub App
     required: true
   repositories:
-    description: One or more comma-separated repositories to create the token for
+    description: One or more comma-separated repositories to create the token for, as bare names without the owner prefix
     required: true
+  owner:
+    description: The owner of the repositories, which must be the account the GitHub App is installed on (defaults to the owner of the current repository)
+    required: false
+    default: ${{ github.repository_owner }}
   skip_token_revoke:
     description: If true, the token will not be revoked when the current job completes (set this when the token is passed to and used by other jobs)
     required: false
@@ -36,7 +40,7 @@ runs:
       with:
         client-id: ${{ inputs.client_id }}
         private-key: ${{ inputs.private_key }}
-        owner: ${{ github.repository_owner }}
+        owner: ${{ inputs.owner }}
         repositories: ${{ inputs.repositories }}
         skip-token-revoke: ${{ inputs.skip_token_revoke }}
 
