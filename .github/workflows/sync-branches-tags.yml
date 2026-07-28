@@ -89,8 +89,8 @@ jobs:
           echo "owner=${SOURCE%%/*}" >> "$GITHUB_OUTPUT"
           echo "repositories=${SOURCE#*/},${DESTINATION#*/}" >> "$GITHUB_OUTPUT"
 
-  # Sync each branch in its own job so they can run in parallel.
-  sync-branch:
+  # Sync each branch glob in its own job so they can run in parallel.
+  sync-branch-glob:
     name: Synchronize ${{ matrix.branch_glob }}
     needs: get-branch-globs
     runs-on: ubuntu-latest
