@@ -47,6 +47,7 @@ jobs:
   # between jobs.
   create-branch-tag:
     name: Create branch and tag
+    if: ${{ github.repository == 'XRPLF/actions' }}
     runs-on: ubuntu-latest
     outputs:
       # The env context is not available in a job's `with:` when calling a reusable workflow, so
@@ -91,6 +92,7 @@ jobs:
   # Do a sync dry-run to ensure the workflow and scripts are working.
   sync-dry-run:
     name: Sync branches and tags (dry-run)
+    if: ${{ github.repository == 'XRPLF/actions' }}
     needs: create-branch-tag
     uses: ./.github/workflows/sync-branches-tags.yml
     secrets:
@@ -105,6 +107,7 @@ jobs:
   # Verify that the test branch and tag do not exist in the destination repo.
   verify-dry-run:
     name: Verify (dry-run)
+    if: ${{ github.repository == 'XRPLF/actions' }}
     runs-on: ubuntu-latest
     needs:
       - create-branch-tag
@@ -141,6 +144,7 @@ jobs:
   # repository.
   sync-regular:
     name: Sync branches and tags (regular)
+    if: ${{ github.repository == 'XRPLF/actions' }}
     uses: ./.github/workflows/sync-branches-tags.yml
     needs:
       - create-branch-tag
@@ -157,6 +161,7 @@ jobs:
   # Verify that the test branch and tag now exist in the destination repository.
   verify-regular:
     name: Verify (regular)
+    if: ${{ github.repository == 'XRPLF/actions' }}
     runs-on: ubuntu-latest
     needs:
       - create-branch-tag
@@ -191,8 +196,8 @@ jobs:
   # jobs failed, and also run its steps unconditionally, so they run if previous steps failed.
   clean-up:
     name: Clean up
+    if: ${{ github.repository == 'XRPLF/actions' && always() }}
     runs-on: ubuntu-latest
-    if: always()
     needs:
       - create-branch-tag
       - verify-regular
