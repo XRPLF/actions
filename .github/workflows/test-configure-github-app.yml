@@ -39,7 +39,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Test configure-github-app
+      - name: Run configure-github-app
         id: app
         uses: ./configure-github-app
         with:
@@ -47,28 +47,21 @@ jobs:
           private_key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
           repositories: ${{ github.event.repository.name }}
 
-      - name: Confirm results
+      # The outputs are passed via env rather than interpolated into the script, so that the token is
+      # never substituted into the script body and values are not re-parsed by the shell.
+      - name: Confirm an app token was returned
         env:
-          USER_NAME: xrplf-github-bot[bot]
-          USER_EMAIL: 217668010+xrplf-github-bot[bot]@users.noreply.github.com
-        run: |
-          if [[ -z '${{ steps.app.outputs.app_token }}' ]]; then
-            echo "Expected app_token to be set"
-            exit 1
-          fi
-          if [[ '${{ steps.app.outputs.user_name }}' != '${{ env.USER_NAME }}' ]]; then
-            echo "Unexpected app user_name"
-            exit 1
-          fi
-          if [[ "${{ steps.app.outputs.user_email }}" != '${{ env.USER_EMAIL }}' ]]; then
-            echo "Unexpected app user_email"
-            exit 1
-          fi
-          if [[ "$(git config --global user.name)" != '${{ steps.app.outputs.user_name }}' ]]; then
-            echo "Unexpected git user.name"
-            exit 1
-          fi
-          if [[ "$(git config --global user.email)" != '${{ steps.app.outputs.user_email }}' ]]; then
-            echo "Unexpected git user.email"
-            exit 1
-          fi
+          APP_TOKEN: ${{ steps.app.outputs.app_token }}
+        run: test -n "${APP_TOKEN}"
+
+      - name: Confirm the app user_name is exposed
+        env:
+          ACTUAL: ${{ steps.app.outputs.user_name }}
+          EXPECTED: xrplf-github-bot[bot]
+        run: test "${ACTUAL}" = "${EXPECTED}"
+
+      - name: Confirm the app user_email is exposed
+        env:
+          ACTUAL: ${{ steps.app.outputs.user_email }}
+          EXPECTED: 217668010+xrplf-github-bot[bot]@users.noreply.github.com
+        run: test "${ACTUAL}" = "${EXPECTED}"

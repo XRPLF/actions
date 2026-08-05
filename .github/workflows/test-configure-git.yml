@@ -1,0 +1,41 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-configure-git.yml"
+      - "configure-git/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-configure-git.yml"
+      - "configure-git/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-configure-git:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Run configure-git
+        uses: ./configure-git
+        with:
+          user_name: Test User
+          user_email: test-user@example.com
+
+      - name: Confirm git user.name was configured
+        env:
+          USER_NAME: Test User
+        run: test "$(git config --global user.name)" = "${USER_NAME}"
+
+      - name: Confirm git user.email was configured
+        env:
+          USER_EMAIL: test-user@example.com
+        run: test "$(git config --global user.email)" = "${USER_EMAIL}"

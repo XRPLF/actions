@@ -39,21 +39,21 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Test get-nproc action without subtraction
+      - name: Run get-nproc action without subtraction
         id: without-subtraction
         uses: ./get-nproc
 
-      - name: Test get-nproc action with small subtraction
+      - name: Run get-nproc action with small subtraction
         id: with-small-subtraction
         uses: ./get-nproc
         with:
           subtract: ${{ env.SUBTRACTION }}
 
-      - name: Test get-nproc action with large subtraction (should fail)
+      - name: Run get-nproc action with large subtraction (should fail)
         id: with-large-subtraction
         uses: ./get-nproc
         with:
-          subtract: 1000
+          subtract: "1000"
         continue-on-error: true
 
       - name: Display results
@@ -62,23 +62,25 @@ jobs:
           WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
         run: |
           echo "NPROC without subtraction: ${WITHOUT_SUB}"
-          if [ ${WITHOUT_SUB} -lt 1 ]; then
-              echo "Expected at least 1 processor before subtraction."
-              exit 1
-          fi
-
           echo "NPROC with small subtraction: ${WITH_SUB}"
-          if [ ${WITH_SUB} -lt 1 ]; then
-              echo "Expected at least 1 processor after subtraction."
-              exit 1
-          fi
 
-          if ((${WITHOUT_SUB} - ${SUBTRACTION} != ${WITH_SUB})); then
-              echo "Expected ${WITHOUT_SUB}-${SUBTRACTION}=${WITH_SUB}."
-              exit 1
-          fi
+      - name: Confirm at least 1 processor is reported without subtraction
+        env:
+          WITHOUT_SUB: ${{ steps.without-subtraction.outputs.nproc }}
+        run: test "${WITHOUT_SUB}" -ge 1
 
-          if [ '${{ steps.with-large-subtraction.outcome }}' != 'failure' ]; then
-              echo "Expected large subtraction to fail."
-              exit 1
-          fi
+      - name: Confirm at least 1 processor is reported after subtraction
+        env:
+          WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
+        run: test "${WITH_SUB}" -ge 1
+
+      - name: Confirm the subtraction was applied to the processor count
+        env:
+          WITHOUT_SUB: ${{ steps.without-subtraction.outputs.nproc }}
+          WITH_SUB: ${{ steps.with-small-subtraction.outputs.nproc }}
+        run: test "$((WITHOUT_SUB - SUBTRACTION))" -eq "${WITH_SUB}"
+
+      - name: Confirm a subtraction larger than the processor count fails
+        env:
+          OUTCOME: ${{ steps.with-large-subtraction.outcome }}
+        run: test "${OUTCOME}" = "failure"

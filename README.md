@@ -10,6 +10,12 @@ Reusable workflows and actions for XRPLF repos
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.
 
+## Available Git Actions
+
+- `clone-repo`: Clones a repository authenticated with a token, so that subsequent plain git commands work without additional setup.
+- `configure-git`: Configures the git user identity (name and email) for the current job.
+- `configure-github-app`: Creates a token for a GitHub App and exposes its git user identity, for use with `configure-git`.
+
 ## Available Reusable Workflows
 
 - `build-multiarch-image.yml`: Builds a multi-architecture Docker image and pushes it to a container registry.
@@ -18,6 +24,7 @@ Reusable workflows and actions for XRPLF repos
 - `determine-tidy-files.yml`: Determines which files have been modified in a Pull Request and sets an output variables with the list of those files.
 - `pre-commit.yml`: Runs `pre-commit` checks on code changes.
 - `pre-commit-autoupdate.yml`: Runs `pre-commit autoupdate` to update pre-commit hooks.
+- `sync-branches-tags.yml`: Synchronizes branches and tags between two repositories.
 
 ## Maintenance Tools
 

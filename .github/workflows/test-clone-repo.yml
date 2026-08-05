@@ -1,0 +1,76 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-clone-repo.yml"
+      - "clone-repo/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-clone-repo.yml"
+      - "clone-repo/**"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * *"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-clone-repo:
+    runs-on: ubuntu-latest
+
+    # The push check below needs write access to be able to verify that the token persisted by the
+    # action actually authenticates. Nothing is ever written, as the push is a dry run.
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # The clone lands in a directory named after the repository. GITHUB_REPOSITORY is used instead
+      # of github.event.repository.name, since the latter is not populated for schedule-triggered
+      # runs, and is exposed as an env var so every check below can use it as its working directory.
+      - name: Determine the expected clone directory
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY#*/}" >> "${GITHUB_ENV}"
+
+      - name: Run clone-repo
+        uses: ./clone-repo
+        with:
+          repository: ${{ github.repository }}
+          token: ${{ github.token }}
+
+      - name: Confirm the repository was cloned into a directory named after it
+        run: test -d "${REPO_NAME}"
+
+      - name: Confirm the clone is a git repository
+        working-directory: ${{ env.REPO_NAME }}
+        run: test -d ".git"
+
+      - name: Confirm the working tree was checked out
+        working-directory: ${{ env.REPO_NAME }}
+        run: test -f README.md
+
+      # The auth header must be persisted into .git/config so subsequent plain git commands (e.g.
+      # push) against this clone are authenticated without any further setup. Only the config key
+      # names are printed, to keep the header value out of the logs.
+      - name: Confirm the authenticated HTTP extraheader is persisted
+        working-directory: ${{ env.REPO_NAME }}
+        run: git config --local --name-only --get-regexp '^http\..*\.extraheader$'
+
+      # The token belongs in the extraheader, not in the remote URL, where git would otherwise leak
+      # it into its error messages.
+      - name: Confirm the token is not embedded in the remote URL
+        working-directory: ${{ env.REPO_NAME }}
+        run: test "$(git remote get-url origin)" = "https://github.com/${GITHUB_REPOSITORY}"
+
+      # A push is what actually proves the persisted credential works: unlike a fetch, which succeeds
+      # anonymously on a public repository, a push is rejected without a token that has write access.
+      # Nothing is written, as --dry-run stops before any ref is updated. The target is a branch name
+      # that does not exist, so the push is always a fast-forwardable ref creation; pushing to an
+      # existing branch would instead be rejected as non-fast-forward whenever HEAD is not at its tip,
+      # which is a failure unrelated to authentication.
+      - name: Confirm a plain git command is authenticated against the clone
+        working-directory: ${{ env.REPO_NAME }}
+        run: git push --dry-run origin "HEAD:refs/heads/ci-auth-probe-${GITHUB_RUN_ID}"

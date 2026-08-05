@@ -1,5 +1,5 @@
 name: Configure GitHub App
-description: Create a token for a GitHub App and configure the app as the git user
+description: Create a token for a GitHub App and expose its git user identity
 
 inputs:
   client_id:
@@ -9,19 +9,27 @@ inputs:
     description: The private key of the GitHub App
     required: true
   repositories:
-    description: One or more comma-separated repositories to create the token for
+    description: One or more comma-separated repositories to create the token for, as bare names without the owner prefix
     required: true
+  owner:
+    description: The owner of the repositories, which must be the account the GitHub App is installed on (defaults to the owner of the current repository)
+    required: false
+    default: ${{ github.repository_owner }}
+  skip_token_revoke:
+    description: If true, the token will not be revoked when the current job completes (set this when the token is passed to and used by other jobs)
+    required: false
+    default: "false"
 
 outputs:
   app_token:
     description: The token for the GitHub App
     value: ${{ steps.app-token.outputs.token }}
   user_name:
-    description: The name of the GitHub App
-    value: ${{ steps.configure-git.outputs.user_name }}
+    description: The name of the GitHub App, for use with the `configure-git` action
+    value: ${{ steps.git-user.outputs.user_name }}
   user_email:
-    description: The email address of the GitHub App
-    value: ${{ steps.configure-git.outputs.user_email }}
+    description: The email address of the GitHub App, for use with the `configure-git` action
+    value: ${{ steps.git-user.outputs.user_email }}
 
 runs:
   using: composite
@@ -32,8 +40,9 @@ runs:
       with:
         client-id: ${{ inputs.client_id }}
         private-key: ${{ inputs.private_key }}
-        owner: ${{ github.repository_owner }}
+        owner: ${{ inputs.owner }}
         repositories: ${{ inputs.repositories }}
+        skip-token-revoke: ${{ inputs.skip_token_revoke }}
 
     - name: Get GitHub App User ID
       id: app-user
@@ -44,16 +53,11 @@ runs:
         USER_ID=$(gh api '/users/${{ steps.app-token.outputs.app-slug }}[bot]' --jq .id)
         echo "user_id=${USER_ID}" >> "${GITHUB_OUTPUT}"
 
-    - name: Configure git
-      id: configure-git
+    - name: Determine git user identity
+      id: git-user
       shell: bash
       run: |
         USER_NAME='${{ steps.app-token.outputs.app-slug }}[bot]'
         echo "user_name=${USER_NAME}" >> "${GITHUB_OUTPUT}"
         USER_EMAIL='${{ steps.app-user.outputs.user_id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com'
         echo "user_email=${USER_EMAIL}" >> "${GITHUB_OUTPUT}"
-
-        git config --global user.name "${USER_NAME}"
-        git config --global user.email "${USER_EMAIL}"
-        # Disable nagging message.
-        git config --global advice.defaultBranchName false
