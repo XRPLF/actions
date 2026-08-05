@@ -42,12 +42,49 @@ env:
   TAG: v${{ github.run_number }}.${{ github.run_attempt }}
 
 jobs:
+  # Verify the GitHub App secrets are configured and the app can actually access the source and
+  # destination test repos, before running anything else. Minting a token scoped to those repos
+  # doubles as an existence/access check for them, so no separate lookup is needed.
+  check-prerequisites:
+    name: Check prerequisites
+    runs-on: ubuntu-latest
+    outputs:
+      can_run: ${{ steps.check.outputs.can_run }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # Secrets cannot be referenced directly in a step's `if:`, so check their presence here and
+      # gate the next step on this step's output instead.
+      - name: Check if GitHub App secrets are available
+        id: has-secrets
+        env:
+          HAS_SECRETS: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID != '' && secrets.XRPLF_GITHUB_APP_PRIVATE_KEY != '' }}
+        run: echo "has_secrets=${HAS_SECRETS}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure GitHub App
+        id: configure-app
+        if: ${{ steps.has-secrets.outputs.has_secrets == 'true' }}
+        continue-on-error: true
+        uses: ./configure-github-app
+        with:
+          client_id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
+          private_key: ${{ secrets.XRPLF_GITHUB_APP_PRIVATE_KEY }}
+          repositories: ${{ env.REPO_SRC }},${{ env.REPO_DST }}
+
+      - name: Report whether the test environment is available
+        id: check
+        env:
+          OUTCOME: ${{ steps.configure-app.outcome }}
+        run: echo "can_run=$([[ "${OUTCOME}" == 'success' ]] && echo true || echo false)" >> "${GITHUB_OUTPUT}"
+
   # Create the test branch and tag in the source repository. Every job mints its own GitHub App
   # token, scoped to the test repositories and revoked when the job ends, so no token is passed
   # between jobs.
   create-branch-tag:
     name: Create branch and tag
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.check-prerequisites.outputs.can_run == 'true' }}
+    needs: check-prerequisites
     runs-on: ubuntu-latest
     outputs:
       # The env context is not available in a job's `with:` when calling a reusable workflow, so
@@ -92,8 +129,10 @@ jobs:
   # Do a sync dry-run to ensure the workflow and scripts are working.
   sync-dry-run:
     name: Sync branches and tags (dry-run)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    needs: create-branch-tag
+    if: ${{ needs.check-prerequisites.outputs.can_run == 'true' }}
+    needs:
+      - check-prerequisites
+      - create-branch-tag
     uses: ./.github/workflows/sync-branches-tags.yml
     secrets:
       app_client_id: ${{ secrets.XRPLF_GITHUB_APP_CLIENT_ID }}
@@ -107,9 +146,10 @@ jobs:
   # Verify that the test branch and tag do not exist in the destination repo.
   verify-dry-run:
     name: Verify (dry-run)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.check-prerequisites.outputs.can_run == 'true' }}
     runs-on: ubuntu-latest
     needs:
+      - check-prerequisites
       - create-branch-tag
       - sync-dry-run
     steps:
@@ -144,9 +184,10 @@ jobs:
   # repository.
   sync-regular:
     name: Sync branches and tags (regular)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.check-prerequisites.outputs.can_run == 'true' }}
     uses: ./.github/workflows/sync-branches-tags.yml
     needs:
+      - check-prerequisites
       - create-branch-tag
       - verify-dry-run
     secrets:
@@ -161,9 +202,10 @@ jobs:
   # Verify that the test branch and tag now exist in the destination repository.
   verify-regular:
     name: Verify (regular)
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.check-prerequisites.outputs.can_run == 'true' }}
     runs-on: ubuntu-latest
     needs:
+      - check-prerequisites
       - create-branch-tag
       - sync-regular
     steps:
@@ -196,9 +238,10 @@ jobs:
   # jobs failed, and also run its steps unconditionally, so they run if previous steps failed.
   clean-up:
     name: Clean up
-    if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ always() && needs.check-prerequisites.outputs.can_run == 'true' }}
     runs-on: ubuntu-latest
     needs:
+      - check-prerequisites
       - create-branch-tag
       - verify-regular
     steps:

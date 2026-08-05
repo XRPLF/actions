@@ -25,5 +25,5 @@ runs:
       # against this clone are authenticated too.
       run: |
         git clone \
-          -c "http.https://github.com/${REPOSITORY}.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "${TOKEN}" | base64 -w0)" \
+          -c "http.https://github.com/${REPOSITORY}.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "${TOKEN}" | base64 | tr -d '\n')" \
           "https://github.com/${REPOSITORY}"
