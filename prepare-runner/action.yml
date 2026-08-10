@@ -16,6 +16,7 @@ runs:
         brew uninstall --force \
           cmake \
           conan \
+          corrosion \
           rust
 
     - name: Trust AWS Homebrew tap (macOS)
@@ -33,7 +34,6 @@ runs:
           clang-build-analyzer \
           colima \
           coreutils \
-          corrosion \
           docker \
           ninja \
           python@3.14
