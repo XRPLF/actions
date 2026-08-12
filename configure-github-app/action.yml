@@ -19,6 +19,18 @@ inputs:
     description: If true, the token will not be revoked when the current job completes (set this when the token is passed to and used by other jobs)
     required: false
     default: "false"
+  wait_token_attempt_check:
+    description: If true, wait until the token can access the specified repositories before proceeding by periodically checking
+    required: false
+    default: "true"
+  wait_token_attempt_secs:
+    description: The number of seconds to wait between attempts to verify the token can access the specified repositories
+    required: false
+    default: "5"
+  wait_token_attempt_num:
+    description: The maximum number of attempts to verify the token can access the specified repositories before failing
+    required: false
+    default: "6"
 
 outputs:
   app_token:
@@ -43,6 +55,39 @@ runs:
         owner: ${{ inputs.owner }}
         repositories: ${{ inputs.repositories }}
         skip-token-revoke: ${{ inputs.skip_token_revoke }}
+
+    - name: Wait for the token to become active
+      # GitHub sometimes issues a token before it has fully propagated, causing requests that
+      # immediately use it to sometimes fail to accesse specified repositories. Poll until the
+      # token can access all of them before proceeding.
+      if: ${{ inputs.wait_token_attempt_check == 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        OWNER: ${{ inputs.owner }}
+        REPOSITORIES: ${{ inputs.repositories }}
+        ATTEMPT_SECS: ${{ inputs.wait_token_attempt_secs }}
+        ATTEMPT_NUM: ${{ inputs.wait_token_attempt_num }}
+      run: |
+        IFS=',' read -ra REPOS <<< "${REPOSITORIES}"
+        for ((ATTEMPT = 1; ATTEMPT <= ATTEMPT_NUM; ATTEMPT++)); do
+          ACCESSIBLE=true
+          for REPO in "${REPOS[@]}"; do
+            if ! gh api "repos/${OWNER}/${REPO}" --silent; then
+              ACCESSIBLE=false
+              break
+            fi
+          done
+          if [ "${ACCESSIBLE}" = true ]; then
+            exit 0
+          fi
+          if [ "${ATTEMPT}" -lt "${ATTEMPT_NUM}" ]; then
+            echo "Attempt ${ATTEMPT}/${ATTEMPT_NUM}: token cannot yet access all repositories, waiting ${ATTEMPT_SECS}s..."
+            sleep "${ATTEMPT_SECS}"
+          fi
+        done
+        echo "::error::Token could not access all repositories (${REPOSITORIES}) after ${ATTEMPT_NUM} attempts."
+        exit 1
 
     - name: Get GitHub App User ID
       id: app-user
