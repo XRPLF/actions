@@ -20,7 +20,7 @@ inputs:
     required: false
     default: "false"
   wait_token_attempt_check:
-    description: If true, wait until the token can access the specified repositories before proceeding by periodically checking
+    description: If true, periodically check until the token can access the specified repositories before proceeding
     required: false
     default: "true"
   wait_token_attempt_secs:
@@ -58,7 +58,7 @@ runs:
 
     - name: Wait for the token to become active
       # GitHub sometimes issues a token before it has fully propagated, causing requests that
-      # immediately use it to sometimes fail to accesse specified repositories. Poll until the
+      # immediately use it to sometimes fail to access the specified repositories. Poll until the
       # token can access all of them before proceeding.
       if: ${{ inputs.wait_token_attempt_check == 'true' }}
       shell: bash
@@ -68,11 +68,13 @@ runs:
         REPOSITORIES: ${{ inputs.repositories }}
         ATTEMPT_SECS: ${{ inputs.wait_token_attempt_secs }}
         ATTEMPT_NUM: ${{ inputs.wait_token_attempt_num }}
+      # Parse and trim the comma-separated list of repositories into an array before checking them.
       run: |
         IFS=',' read -ra REPOS <<< "${REPOSITORIES}"
         for ((ATTEMPT = 1; ATTEMPT <= ATTEMPT_NUM; ATTEMPT++)); do
           ACCESSIBLE=true
           for REPO in "${REPOS[@]}"; do
+            read -r REPO <<< "${REPO}"
             if ! gh api "repos/${OWNER}/${REPO}" --silent; then
               ACCESSIBLE=false
               break
