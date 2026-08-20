@@ -22,7 +22,13 @@ jobs:
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
-          - os: macos-26-apple-clang-21
+          - os: macos15
+          - os: macos15
+          - os: macos15
+          - os: macos15
+          - os: macos15
+          - os: macos15
+          - os: macos15
           - os: dev-box-windows-2026
 
     runs-on: ${{ matrix.os }}
@@ -36,6 +42,10 @@ jobs:
         uses: ./prepare-runner
         with:
           enable_ccache: false
+
+      - name: Sleep for 30 seconds to fix all runners
+        shell: bash
+        run: sleep 30
 
       - name: Verify ccache is disabled
         shell: bash
