@@ -140,7 +140,9 @@ runs:
           fi
 
           # Note: The binary is missing here, but cargo's install metadata may
-          # still claim otherwise on a cleaned runner, so --force is needed.
+          # still claim otherwise on a runner after old `Swatinem/rust-cache` removed `~/.cargo/bin`
+          # Running with `--force` to force installation.
+          # See https://github.com/XRPLF/rippled/pull/8062 for more details
           if command -v cargo-binstall >/dev/null 2>&1; then
             cargo binstall --no-confirm --force "$TOOL"
           else
