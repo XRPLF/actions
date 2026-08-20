@@ -145,10 +145,20 @@ runs:
         for TOOL in cargo-audit cargo-llvm-cov cargo-nextest; do
           if command -v "$TOOL" >/dev/null 2>&1; then
             echo "$TOOL already installed; skipping installation"
-          elif command -v cargo-binstall >/dev/null 2>&1; then
-            cargo binstall --no-confirm "$TOOL"
+            continue
+          fi
+
+          # Note: The binary is missing here, but cargo's install metadata may
+          # still claim otherwise on a cleaned runner, so --force is needed.
+          if command -v cargo-binstall >/dev/null 2>&1; then
+            cargo binstall --no-confirm --force "$TOOL"
           else
-            cargo install --locked "$TOOL"
+            cargo install --locked --force "$TOOL"
+          fi
+
+          if ! command -v "$TOOL" >/dev/null 2>&1; then
+            echo "::error::$TOOL is still missing after installation"
+            exit 1
           fi
         done
 
