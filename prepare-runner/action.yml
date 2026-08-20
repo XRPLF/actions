@@ -9,6 +9,15 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Reset Homebrew to stable version (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      # Developer mode makes `brew update` track Homebrew's master branch instead of
+      # stable release tags; turn it off and update to get back to the latest stable tag.
+      run: |
+        brew developer off
+        brew update --quiet
+
     - name: Delete old build tools installed using Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
