@@ -184,11 +184,11 @@ runs:
         # works when we're actually root (i.e. inside a container); a bare,
         # non-root runner can't write to /root, so fall back to its own home.
         if [ "$(id -u)" -eq 0 ]; then
-          echo "CCACHE_DIR=/root/.ccache" >> $GITHUB_ENV
-          echo "CONAN_HOME=/root/.conan2" >> $GITHUB_ENV
+          echo "CCACHE_DIR=/root/.ccache" >> "${GITHUB_ENV}"
+          echo "CONAN_HOME=/root/.conan2" >> "${GITHUB_ENV}"
         else
-          echo "CCACHE_DIR=$HOME/.ccache" >> $GITHUB_ENV
-          echo "CONAN_HOME=$HOME/.conan2" >> $GITHUB_ENV
+          echo "CCACHE_DIR=${HOME}/.ccache" >> "${GITHUB_ENV}"
+          echo "CONAN_HOME=${HOME}/.conan2" >> "${GITHUB_ENV}"
         fi
 
     - name: Set env variables (Windows)

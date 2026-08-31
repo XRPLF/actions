@@ -50,9 +50,9 @@ jobs:
       - name: Verify ccache and conan directories are writable
         shell: bash
         run: |
-          for DIR in "$CCACHE_DIR" "$CONAN_HOME"; do
-            if [ ! -d "$DIR" ] || [ ! -w "$DIR" ]; then
-                echo "$DIR does not exist or is not writable"
+          for DIR in "${CCACHE_DIR}" "${CONAN_HOME}"; do
+            if [ ! -d "${DIR}" ] || [ ! -w "${DIR}" ]; then
+                echo "${DIR} does not exist or is not writable"
                 exit 1
             fi
           done
