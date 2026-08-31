@@ -22,6 +22,7 @@ jobs:
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
           - os: heavy-arm64
             container: '{ "image": "ghcr.io/xrplf/xrpld/nix-ubuntu:latest" }'
+          - os: ubuntu-latest
           - os: macos-26-apple-clang-21
           - os: dev-box-windows-2026
 
@@ -46,7 +47,22 @@ jobs:
           fi
           echo "CCACHE_DISABLE is correctly set to 1"
 
+      - name: Verify ccache and conan directories are writable
+        shell: bash
+        run: |
+          for DIR in "$CCACHE_DIR" "$CONAN_HOME"; do
+            if [ ! -d "$DIR" ] || [ ! -w "$DIR" ]; then
+                echo "$DIR does not exist or is not writable"
+                exit 1
+            fi
+          done
+          echo "CCACHE_DIR and CONAN_HOME exist and are writable"
+
+      # ubuntu-latest is only present to exercise prepare-runner on a bare
+      # Linux runner (no container); it does not have cmake/conan/ccache/Rust
+      # preinstalled the way the other runners do.
       - name: Verify build tools are able to run
+        if: ${{ matrix.os != 'ubuntu-latest' }}
         shell: bash
         run: |
           cmake --version
@@ -59,6 +75,7 @@ jobs:
           fi
 
       - name: Verify Rust tools are able to run
+        if: ${{ matrix.os != 'ubuntu-latest' }}
         shell: bash
         run: |
           cargo --version
