@@ -177,18 +177,16 @@ runs:
       if: ${{ runner.os == 'Linux' }}
       shell: bash
       run: |
-        # /root is kept outside the workspace intentionally: it survives
-        # cleanup-workspace and per-job workspace resets, and it must not be
-        # confused with any workspace-local Conan home a caller sets up for a
-        # different toolchain (e.g. rippled's nix-provided Conan). That only
-        # works when we're actually root (i.e. inside a container); a bare,
-        # non-root runner can't write to /root, so fall back to its own home.
-        if [ "$(id -u)" -eq 0 ]; then
+        # When using one of our containers to run a job, the root directory
+        # holds the ccache and conan caches, so they can be shared across jobs.
+        # However, when no container is specified then we can't write to that
+        # directory, and we thus fall back to the workspace.
+        if [ -w /root ]; then
           echo "CCACHE_DIR=/root/.ccache" >> "${GITHUB_ENV}"
           echo "CONAN_HOME=/root/.conan2" >> "${GITHUB_ENV}"
         else
-          echo "CCACHE_DIR=${HOME}/.ccache" >> "${GITHUB_ENV}"
-          echo "CONAN_HOME=${HOME}/.conan2" >> "${GITHUB_ENV}"
+          echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> "${GITHUB_ENV}"
+          echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> "${GITHUB_ENV}"
         fi
 
     - name: Set env variables (Windows)
