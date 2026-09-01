@@ -58,37 +58,27 @@ jobs:
           done
           echo "CCACHE_DIR and CONAN_HOME exist and are writable"
 
-      - name: Verify ccache and conan directories are in the expected location
+      - name: Verify ccache and conan directories are in the workspace
         shell: bash
         env:
-          # Jobs that specify a container expect the caches under /root, so they
-          # are shared between jobs on the same runner. Every other job expects
-          # them in the workspace.
-          IN_CONTAINER: ${{ matrix.container != '' }}
           WORKSPACE: ${{ github.workspace }}
         run: |
-          if [ "${IN_CONTAINER}" = "true" ]; then
-              EXPECTED_BASE="/root"
-          else
-              EXPECTED_BASE="${WORKSPACE}"
-          fi
-
-          # Windows sets these with backslashes, so compare with the separators
-          # normalized.
+          # Windows uses the other path separator, so compare with the
+          # separators normalized.
           norm() { printf '%s' "$1" | tr '\\' '/'; }
 
           STATUS=0
           for PAIR in "CCACHE_DIR:.ccache" "CONAN_HOME:.conan2"; do
             VAR="${PAIR%%:*}"
             ACTUAL="$(norm "${!VAR}")"
-            EXPECTED="$(norm "${EXPECTED_BASE}/${PAIR#*:}")"
+            EXPECTED="$(norm "${WORKSPACE}/${PAIR#*:}")"
             if [ "${ACTUAL}" != "${EXPECTED}" ]; then
                 echo "${VAR} is '${ACTUAL}', expected '${EXPECTED}'"
                 STATUS=1
             fi
           done
           [ "${STATUS}" -eq 0 ] || exit 1
-          echo "CCACHE_DIR and CONAN_HOME are in the expected location"
+          echo "CCACHE_DIR and CONAN_HOME are in the workspace"
 
       # ubuntu-latest is only present to exercise prepare-runner on a bare
       # Linux runner (no container); it does not have cmake/conan/ccache/Rust

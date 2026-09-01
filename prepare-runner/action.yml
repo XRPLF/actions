@@ -166,29 +166,14 @@ runs:
       shell: bash
       run: git config --global --add safe.directory "$PWD"
 
-    - name: Set env variables (macOS)
-      if: ${{ runner.os == 'macOS' }}
+    - name: Set env variables (Linux and macOS)
+      if: ${{ runner.os == 'Linux' || runner.os == 'macOS' }}
       shell: bash
       run: |
-        echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> $GITHUB_ENV
-        echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> $GITHUB_ENV
+        echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> "${GITHUB_ENV}"
+        echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> "${GITHUB_ENV}"
 
-    - name: Set env variables (Linux)
-      if: ${{ runner.os == 'Linux' }}
-      shell: bash
-      run: |
-        # When using one of our containers to run a job, the root directory
-        # holds the ccache and conan caches, so they can be shared across jobs.
-        # However, when no container is specified then we can't write to that
-        # directory, and we thus fall back to the workspace.
-        if [ -w /root ]; then
-          echo "CCACHE_DIR=/root/.ccache" >> "${GITHUB_ENV}"
-          echo "CONAN_HOME=/root/.conan2" >> "${GITHUB_ENV}"
-        else
-          echo "CCACHE_DIR=${{ github.workspace }}/.ccache" >> "${GITHUB_ENV}"
-          echo "CONAN_HOME=${{ github.workspace }}/.conan2" >> "${GITHUB_ENV}"
-        fi
-
+    # Windows is kept separate, as it needs the other path separator.
     - name: Set env variables (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
