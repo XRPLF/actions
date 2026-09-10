@@ -141,6 +141,7 @@ jobs:
       source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
       destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
       branch_globs: ${{ needs.create-branch-tag.outputs.branch }}
+      sync_tags: true
       dry_run: true
 
   # Verify that the test branch and tag do not exist in the destination repo.
@@ -197,6 +198,7 @@ jobs:
       source: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_src }}
       destination: ${{ github.repository_owner }}/${{ needs.create-branch-tag.outputs.repo_dst }}
       branch_globs: ${{ needs.create-branch-tag.outputs.branch }}
+      sync_tags: true
       dry_run: false
 
   # Verify that the test branch and tag now exist in the destination repository.

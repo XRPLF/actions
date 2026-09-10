@@ -1,7 +1,8 @@
 # This workflow can be used to synchronize branches and tags between two repositories. Existing
 # destination branches are fast-forwarded to match the source, and missing branches are created. A
 # branch that has diverged from the source is never overwritten; the run fails instead. A dry run
-# can be performed to report what would change. Tags are synced after all branch jobs complete.
+# can be performed to report what would change. Tags are not synchronized unless sync_tags is
+# turned on, in which case they are synced after all branch jobs complete.
 #
 # Authentication uses a GitHub App: every job mints its own installation token from the App
 # credentials, scoped to the source and destination repositories, and that token is revoked when the
@@ -28,6 +29,10 @@ on:
         description: "Comma-separated branch globs to synchronize."
         type: string
         required: true
+      sync_tags:
+        description: "Synchronize tags as well as branches."
+        type: boolean
+        default: false
       dry_run:
         description: "Perform a dry run: report what would change without pushing anything."
         type: boolean
@@ -129,6 +134,7 @@ jobs:
   # a branch in the destination repository before the tag pointing to them arrives.
   sync-tags:
     name: Synchronize tags
+    if: ${{ inputs.sync_tags }}
     needs:
       - get-branch-globs
       - sync-branch-glob
