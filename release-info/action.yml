@@ -13,6 +13,7 @@ runs:
   using: composite
   steps:
     # Only a tag says how mature a build is; anything else is a develop build.
+    # A tag matching none of the release patterns is a custom build.
     - name: Determine release channel
       id: channel
       shell: bash
@@ -21,24 +22,20 @@ runs:
         REF_NAME: ${{ github.ref_name }}
         VISIBILITY: ${{ github.event.repository.visibility }}
       run: |
-        pre_release=""
-        if [[ "${REF_NAME}" == *-* ]]; then
-            pre_release="${REF_NAME#*-}"
-        fi
+        release='[0-9]+\.[0-9]+\.[0-9]+'
 
         if [[ "${VISIBILITY}" != "public" ]]; then
             channel=private
         elif [[ "${IS_TAG}" != "true" ]]; then
             channel=develop
-        elif [[ -z "${pre_release}" ]]; then
+        elif [[ "${REF_NAME}" =~ ^${release}$ ]]; then
             channel=stable
-        elif [[ "${pre_release}" =~ ^rc[0-9]+(\+.*)?$ ]]; then
+        elif [[ "${REF_NAME}" =~ ^${release}-rc[0-9]+(\+.*)?$ ]]; then
             channel=rc
-        elif [[ "${pre_release}" =~ ^b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
+        elif [[ "${REF_NAME}" =~ ^${release}-b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
             channel=beta
         else
-            echo "Unsupported pre-release in tag '${REF_NAME}'. Use bN or rcN." >&2
-            exit 1
+            channel=custom
         fi
 
         echo "channel=${channel}" | tee -a "${GITHUB_OUTPUT}"
