@@ -9,7 +9,7 @@ Reusable workflows and actions for XRPLF repos
 - `get-nproc`: Retrieves the number of processing units available on the runner.
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.
-- `release-info`: Derives the release channel (`stable`, `rc`, `beta`, `develop` or `private`) and the package release number for a build.
+- `release-info`: Derives the release channel (`stable`, `rc`, `beta`, `custom`, `develop` or `private`) and the package release number for a build.
 
 ## Available Git Actions
 

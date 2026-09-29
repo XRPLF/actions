@@ -32,6 +32,47 @@ jobs:
           CHANNEL: ${{ steps.release_info.outputs.channel }}
         run: test "${CHANNEL}" = develop
 
+      - name: Confirm each tag maps to its channel
+        run: |
+          failed=0
+          while read -r visibility is_tag ref_name expected; do
+              actual="$(VISIBILITY="${visibility}" IS_TAG="${is_tag}" REF_NAME="${ref_name}" release-info/channel.sh)"
+              if [[ "${actual}" != "${expected}" ]]; then
+                  echo "::error::${visibility} ${is_tag} ${ref_name}: expected ${expected}, got ${actual}"
+                  failed=1
+              fi
+          done <<'EOF'
+          public  false develop         develop
+          public  true  3.2.0           stable
+          public  true  10.20.30        stable
+          public  true  3.2.0-rc1       rc
+          public  true  3.2.0-rc1+abc   rc
+          public  true  3.2.0-b0        beta
+          public  true  3.2.0-b12       beta
+          public  true  3.2.0-b1+abc    beta
+          public  true  3.2.0-b01       custom
+          public  true  3.2.0-rc        custom
+          public  true  3.2.0-hotfix1   custom
+          public  true  3.2.0-custom-1  custom
+          public  true  3.2.0-rc1-x     custom
+          public  true  3.2.0+abc       custom
+          public  true  3.2.0.1         custom
+          public  true  foo-rc1         custom
+          public  true  03.2.0          custom
+          public  true  3.02.0          custom
+          public  true  3.2.00          custom
+          public  true  3.2.0-rc0       rc
+          public  true  3.2.0-rc01      custom
+          public  true  3.2.0-rc1+a.b-c rc
+          public  true  3.2.0-rc1+      custom
+          public  true  3.2.0-rc1+a..b  custom
+          public  true  3.2.0-b1+a_b    custom
+          private false develop         private
+          private true  3.2.0           private
+          private true  3.2.0-custom-1  private
+          EOF
+          exit "${failed}"
+
       - name: Confirm the package release names the run, commit date and hash
         env:
           PKG_RELEASE: ${{ steps.release_info.outputs.pkg_release }}
