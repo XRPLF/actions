@@ -5,17 +5,17 @@
 # A tag matching none of the release patterns is a custom build.
 set -euo pipefail
 
-release='[0-9]+\.[0-9]+\.[0-9]+'
+VERSION_CORE='[0-9]+\.[0-9]+\.[0-9]+'
 
 if [[ "${VISIBILITY}" != "public" ]]; then
     echo private
 elif [[ "${IS_TAG}" != "true" ]]; then
     echo develop
-elif [[ "${REF_NAME}" =~ ^${release}$ ]]; then
+elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}$ ]]; then
     echo stable
-elif [[ "${REF_NAME}" =~ ^${release}-rc[0-9]+(\+.*)?$ ]]; then
+elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-rc[0-9]+(\+.*)?$ ]]; then
     echo rc
-elif [[ "${REF_NAME}" =~ ^${release}-b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
+elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
     echo beta
 else
     echo custom
