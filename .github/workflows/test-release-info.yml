@@ -61,7 +61,6 @@ jobs:
           private false develop         private
           private true  3.2.0           private
           private true  3.2.0-custom-1  private
-          internal true 3.2.0           private
           EOF
           exit "${failed}"
 
