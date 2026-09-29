@@ -5,7 +5,10 @@
 # A tag matching none of the release patterns is a custom build.
 set -euo pipefail
 
-VERSION_CORE='[0-9]+\.[0-9]+\.[0-9]+'
+# SemVer's grammar, which BuildInfo enforces on the version the binary reports.
+NUMBER='(0|[1-9][0-9]*)'
+VERSION_CORE="${NUMBER}\.${NUMBER}\.${NUMBER}"
+BUILD_METADATA='(\+[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?'
 
 if [[ "${VISIBILITY}" != "public" ]]; then
     echo private
@@ -13,9 +16,9 @@ elif [[ "${IS_TAG}" != "true" ]]; then
     echo develop
 elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}$ ]]; then
     echo stable
-elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-rc[0-9]+(\+.*)?$ ]]; then
+elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-rc${NUMBER}${BUILD_METADATA}$ ]]; then
     echo rc
-elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-b(0|[1-9][0-9]*)(\+.*)?$ ]]; then
+elif [[ "${REF_NAME}" =~ ^${VERSION_CORE}-b${NUMBER}${BUILD_METADATA}$ ]]; then
     echo beta
 else
     echo custom

@@ -58,6 +58,15 @@ jobs:
           public  true  3.2.0+abc       custom
           public  true  3.2.0.1         custom
           public  true  foo-rc1         custom
+          public  true  03.2.0          custom
+          public  true  3.02.0          custom
+          public  true  3.2.00          custom
+          public  true  3.2.0-rc0       rc
+          public  true  3.2.0-rc01      custom
+          public  true  3.2.0-rc1+a.b-c rc
+          public  true  3.2.0-rc1+      custom
+          public  true  3.2.0-rc1+a..b  custom
+          public  true  3.2.0-b1+a_b    custom
           private false develop         private
           private true  3.2.0           private
           private true  3.2.0-custom-1  private
