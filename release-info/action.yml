@@ -12,7 +12,6 @@ outputs:
 runs:
   using: composite
   steps:
-    # Split out so test-release-info.yml can run it against tags of its choosing.
     - name: Determine release channel
       id: channel
       shell: bash
