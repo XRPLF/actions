@@ -68,8 +68,13 @@ jobs:
           public  true  3.2.0-rc1+a..b  custom
           public  true  3.2.0-b1+a_b    custom
           private false develop         private
-          private true  3.2.0           private
+          private true  3.2.0           stable
+          private true  3.2.0+abc       private
+          private true  3.2.0-rc1       private
+          private true  3.2.0-b1        private
           private true  3.2.0-custom-1  private
+          internal true 3.2.0           stable
+          internal true 3.2.0-rc1       private
           EOF
           exit "${failed}"
 

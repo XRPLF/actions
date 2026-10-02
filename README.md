@@ -10,6 +10,7 @@ Reusable workflows and actions for XRPLF repos
 - `prepare-runner`: Prepares the GitHub Actions runner environment for subsequent steps.
 - `print-build-env`: Prints environment related to the build process.
 - `release-info`: Derives the release channel (`stable`, `rc`, `beta`, `custom`, `develop` or `private`) and the package release number for a build.
+  A final release tag is `stable` even in a non-public repository, where any other build is `private`.
 
 ## Available Git Actions
 
