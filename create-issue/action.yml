@@ -84,6 +84,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
 
         ASSIGNEES: ${{ inputs.assignees }}
         LABELS: ${{ inputs.labels }}
@@ -93,6 +94,7 @@ runs:
       run: |
         create_issue_log="$(mktemp)"
         gh issue create \
+          --repo "${GITHUB_REPOSITORY}" \
           --title "${TITLE}" \
           --body-file "${ISSUE_BODY_FILE}" \
           --label "${LABELS}" \

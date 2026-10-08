@@ -20,10 +20,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Run prepare-runner action
-        uses: ./prepare-runner
-        with:
-          enable_ccache: false
+      # Not running prepare-runner on purpose: it marks the workspace as a git safe.directory,
+      # but create-issue must work without it (and without a usable git repo at all).
+      - name: Check that git refuses to work with the workspace
+        shell: bash
+        run: |
+          if git status; then
+              echo "Error: git works in the workspace, so this test doesn't cover the dubious ownership case."
+              exit 1
+          fi
 
       - name: Create an issue 1
         id: create_issue_1
