@@ -71,12 +71,13 @@ jobs:
       - name: Close created issues
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           ISSUE_NUMBER_1=${{ steps.create_issue_1.outputs.issue_number }}
           ISSUE_NUMBER_2=${{ steps.create_issue_2.outputs.issue_number }}
 
           echo "Closing issue 1: ${ISSUE_NUMBER_1}"
-          gh issue close "${ISSUE_NUMBER_1}"
+          gh issue close --repo "${GITHUB_REPOSITORY}" "${ISSUE_NUMBER_1}"
 
           echo "Closing issue 2: ${ISSUE_NUMBER_2}"
-          gh issue close "${ISSUE_NUMBER_2}"
+          gh issue close --repo "${GITHUB_REPOSITORY}" "${ISSUE_NUMBER_2}"
