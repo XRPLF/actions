@@ -52,7 +52,7 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        pip3 install --break-system-packages \
+        python3.14 -m pip install --break-system-packages \
           cmake==4.3.4 \
           conan==2.29.1
 
