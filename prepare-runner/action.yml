@@ -104,7 +104,8 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
-        choco install -y ccache --version 4.14.2 --allow-downgrade
+        # Note: Using version 4.12.x causes Windows Debug builds to fail.
+        choco install -y ccache --version 4.11.3 --allow-downgrade
 
     - name: Export Rust variables (Windows)
       if: ${{ runner.os == 'Windows' }}
