@@ -36,7 +36,7 @@ runs:
           coreutils \
           docker \
           ninja \
-          python@3.14
+          python@3.15
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -52,9 +52,9 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        python3.14 -m pip install --break-system-packages \
-          cmake==4.3.4 \
-          conan==2.29.1
+        python3.15 -m pip install --break-system-packages \
+          cmake==4.4.4 \
+          conan==2.33.0
 
     - name: Export Rust variables (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -92,13 +92,13 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
-        python-version: 3.13
+        python-version: 3.15
     - name: Install build tools using pip (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
       run: |
         pip install \
-          conan==2.24.0
+          conan==2.33.0
 
     - name: Install build tools using chocolatey (Windows)
       if: ${{ runner.os == 'Windows' }}
@@ -122,7 +122,7 @@ runs:
         # Download rustup-init.exe directly (the sh.rustup.rs wrapper auto-detects
         # --default-host as gnu in bash, causing a duplicate-flag error if we override it)
         curl --proto '=https' --tlsv1.2 -sSf -o rustup-init.exe https://win.rustup.rs/x86_64
-        ./rustup-init.exe -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
+        ./rustup-init.exe -y --default-toolchain=1.99.1 --default-host=x86_64-pc-windows-msvc
         rm -f rustup-init.exe
 
     - name: Install cargo tools (macOS and Windows)
