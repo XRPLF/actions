@@ -71,7 +71,8 @@ runs:
         elif sudo -n install -m 644 -o root -g wheel "${BUNDLE}" /etc/ssl/cert.pem; then
           echo "Replaced /etc/ssl/cert.pem with ${BUNDLE}"
         else
-          echo "::warning::Passwordless sudo is unavailable, so /etc/ssl/cert.pem may still trust the compromised eMudhra roots"
+          echo "::error::Passwordless sudo is unavailable, so /etc/ssl/cert.pem may still trust the compromised eMudhra roots"
+          exit 1
         fi
 
     - name: Export Rust variables (macOS)
