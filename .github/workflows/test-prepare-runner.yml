@@ -104,6 +104,34 @@ jobs:
               docker --version
           fi
 
+      # TODO: temporary, to find out why some macOS runners still trust the
+      # compromised eMudhra chain after /etc/ssl/cert.pem is replaced.
+      - name: Debug TLS trust (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          HOST=dv-g3b-emudhra.we-have-a-problem.com
+          set -x
+          sw_vers
+          ls -la /etc/ssl/cert.pem ~/.curlrc /private/var/protected/trustd/ || true
+          cat ~/.curlrc || true
+          env | grep -iE "curl|ssl|cert|requests" || true
+          /usr/bin/curl -V
+          /usr/bin/curl -v -o /dev/null "https://${HOST}/" 2>&1 | grep '^\*' || true
+
+          # Keychain view of the chain: with and without network revocation checks.
+          echo | /usr/bin/openssl s_client -connect "${HOST}:443" -servername "${HOST}" -showcerts 2>/dev/null |
+            awk -v dir="${RUNNER_TEMP}" '/BEGIN CERT/ { n++; p = 1 } p { print > (dir "/chain" n ".pem") } /END CERT/ { p = 0 }' || true
+          CHAIN=()
+          for f in "${RUNNER_TEMP}"/chain*.pem; do CHAIN+=(-c "$f"); done
+          security verify-cert "${CHAIN[@]}" -p ssl -s "${HOST}" || true
+          security verify-cert "${CHAIN[@]}" -p ssl -s "${HOST}" -L -R offline || true
+
+          # Whether the roots are system roots, and any admin/user trust overrides.
+          security find-certificate -c "emSign ECC Root CA - G3" -Z /System/Library/Keychains/SystemRootCertificates.keychain | grep SHA-256 || true
+          security dump-trust-settings -d || true
+          security dump-trust-settings || true
+
       # Both eMudhra checks expect a certificate verification failure
       # specifically, so an unreachable host doesn't pass as distrusted.
       - name: Verify the system curl distrusts compromised eMudhra roots (macOS)
