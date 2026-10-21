@@ -104,6 +104,39 @@ jobs:
               docker --version
           fi
 
+      # Both eMudhra checks expect a certificate verification failure
+      # specifically, so an unreachable host doesn't pass as distrusted.
+      - name: Verify the system curl distrusts compromised eMudhra roots (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
+            RC=0
+            /usr/bin/curl -sS -o /dev/null "https://${HOST}/" || RC=$?
+            if [ "${RC}" -ne 60 ]; then
+                echo "/usr/bin/curl to ${HOST} exited with ${RC}, expected 60"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "The system curl distrusts the compromised roots"
+
+      - name: Verify certifi distrusts compromised eMudhra roots (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
+            OUT="$(python3.14 -I -c 'import requests, sys; requests.get(sys.argv[1])' "https://${HOST}/" 2>&1 || true)"
+            if ! grep -q CERTIFICATE_VERIFY_FAILED <<<"${OUT}"; then
+                echo "requests (certifi) to ${HOST} did not fail certificate verification"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "certifi distrusts the compromised roots"
+
       - name: Verify Rust tools are able to run
         if: ${{ matrix.os != 'ubuntu-latest' }}
         shell: bash

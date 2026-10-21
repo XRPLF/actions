@@ -53,8 +53,26 @@ runs:
       shell: bash
       run: |
         python3.14 -m pip install --break-system-packages \
+          "certifi>=2026.10.19" \
           cmake==4.3.4 \
           conan==2.29.1
+
+    # The system curl, git and python3 verify against /etc/ssl/cert.pem, which
+    # macOS doesn't update, so it still trusts the compromised eMudhra roots
+    # (see https://emudhra.we-have-a-problem.com/). Homebrew ships the current
+    # Mozilla list; not its etc/ bundle, which also pulls in keychain roots.
+    - name: Update system CA bundle from Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        BUNDLE="$(brew --prefix ca-certificates)/share/ca-certificates/cacert.pem"
+        if cmp -s "${BUNDLE}" /etc/ssl/cert.pem; then
+          echo "/etc/ssl/cert.pem is already up to date"
+        elif sudo -n install -m 644 -o root -g wheel "${BUNDLE}" /etc/ssl/cert.pem; then
+          echo "Replaced /etc/ssl/cert.pem with ${BUNDLE}"
+        else
+          echo "::warning::Passwordless sudo is unavailable, so /etc/ssl/cert.pem may still trust the compromised eMudhra roots"
+        fi
 
     - name: Export Rust variables (macOS)
       if: ${{ runner.os == 'macOS' }}
