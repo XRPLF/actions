@@ -104,6 +104,43 @@ jobs:
               docker --version
           fi
 
+      # Both eMudhra checks expect the error for a root missing from the bundle,
+      # so an unreachable host or any other certificate problem (e.g. an expired
+      # demo certificate) doesn't pass as distrusted.
+      #
+      # Not /usr/bin/curl: when its bundle fails, Apple's curl falls back to the
+      # Keychain, whose trust depends on each runner's trustd data rather than
+      # on prepare-runner. Homebrew Python's OpenSSL has no such fallback.
+      - name: Verify /etc/ssl/cert.pem distrusts compromised eMudhra roots (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
+            OUT="$(python3.14 -I -c 'import socket, ssl, sys; h = sys.argv[1]; ssl.create_default_context(cafile="/etc/ssl/cert.pem").wrap_socket(socket.create_connection((h, 443)), server_hostname=h)' "${HOST}" 2>&1 || true)"
+            if ! grep -q "unable to get local issuer certificate" <<<"${OUT}"; then
+                echo "/etc/ssl/cert.pem to ${HOST} did not fail with 'unable to get local issuer certificate'"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "/etc/ssl/cert.pem distrusts the compromised roots"
+
+      - name: Verify certifi distrusts compromised eMudhra roots (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
+            OUT="$(python3.14 -I -c 'import requests, sys; requests.get(sys.argv[1])' "https://${HOST}/" 2>&1 || true)"
+            if ! grep -q "unable to get local issuer certificate" <<<"${OUT}"; then
+                echo "requests (certifi) to ${HOST} did not fail with 'unable to get local issuer certificate'"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "certifi distrusts the compromised roots"
+
       - name: Verify Rust tools are able to run
         if: ${{ matrix.os != 'ubuntu-latest' }}
         shell: bash
