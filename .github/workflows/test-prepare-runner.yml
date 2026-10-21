@@ -104,51 +104,26 @@ jobs:
               docker --version
           fi
 
-      # TODO: temporary, to find out why some macOS runners still trust the
-      # compromised eMudhra chain after /etc/ssl/cert.pem is replaced.
-      - name: Debug TLS trust (macOS)
-        if: ${{ runner.os == 'macOS' }}
-        shell: bash
-        run: |
-          HOST=dv-g3b-emudhra.we-have-a-problem.com
-          set -x
-          sw_vers
-          ls -la /etc/ssl/cert.pem ~/.curlrc /private/var/protected/trustd/ || true
-          cat ~/.curlrc || true
-          env | grep -iE "curl|ssl|cert|requests" || true
-          /usr/bin/curl -V
-          /usr/bin/curl -v -o /dev/null "https://${HOST}/" 2>&1 | grep '^\*' || true
-
-          # Keychain view of the chain: with and without network revocation checks.
-          echo | /usr/bin/openssl s_client -connect "${HOST}:443" -servername "${HOST}" -showcerts 2>/dev/null |
-            awk -v dir="${RUNNER_TEMP}" '/BEGIN CERT/ { n++; p = 1 } p { print > (dir "/chain" n ".pem") } /END CERT/ { p = 0 }' || true
-          CHAIN=()
-          for f in "${RUNNER_TEMP}"/chain*.pem; do CHAIN+=(-c "$f"); done
-          security verify-cert "${CHAIN[@]}" -p ssl -s "${HOST}" || true
-          security verify-cert "${CHAIN[@]}" -p ssl -s "${HOST}" -L -R offline || true
-
-          # Whether the roots are system roots, and any admin/user trust overrides.
-          security find-certificate -c "emSign ECC Root CA - G3" -Z /System/Library/Keychains/SystemRootCertificates.keychain | grep SHA-256 || true
-          security dump-trust-settings -d || true
-          security dump-trust-settings || true
-
       # Both eMudhra checks expect a certificate verification failure
       # specifically, so an unreachable host doesn't pass as distrusted.
-      - name: Verify the system curl distrusts compromised eMudhra roots (macOS)
+      #
+      # Not /usr/bin/curl: when its bundle fails, Apple's curl falls back to the
+      # Keychain, whose trust depends on each runner's trustd data rather than
+      # on prepare-runner. Homebrew Python's OpenSSL has no such fallback.
+      - name: Verify /etc/ssl/cert.pem distrusts compromised eMudhra roots (macOS)
         if: ${{ runner.os == 'macOS' }}
         shell: bash
         run: |
           STATUS=0
           for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
-            RC=0
-            /usr/bin/curl -sS -o /dev/null "https://${HOST}/" || RC=$?
-            if [ "${RC}" -ne 60 ]; then
-                echo "/usr/bin/curl to ${HOST} exited with ${RC}, expected 60"
+            OUT="$(python3.14 -I -c 'import socket, ssl, sys; h = sys.argv[1]; ssl.create_default_context(cafile="/etc/ssl/cert.pem").wrap_socket(socket.create_connection((h, 443)), server_hostname=h)' "${HOST}" 2>&1 || true)"
+            if ! grep -q CERTIFICATE_VERIFY_FAILED <<<"${OUT}"; then
+                echo "/etc/ssl/cert.pem to ${HOST} did not fail certificate verification"
                 STATUS=1
             fi
           done
           [ "${STATUS}" -eq 0 ] || exit 1
-          echo "The system curl distrusts the compromised roots"
+          echo "/etc/ssl/cert.pem distrusts the compromised roots"
 
       - name: Verify certifi distrusts compromised eMudhra roots (macOS)
         if: ${{ runner.os == 'macOS' }}
