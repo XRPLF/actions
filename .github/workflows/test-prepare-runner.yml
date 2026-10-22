@@ -104,6 +104,20 @@ jobs:
               docker --version
           fi
 
+      - name: Verify Python tools come from the virtualenv (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for TOOL in python3.14 pip cmake conan; do
+            if [ "$(command -v "${TOOL}")" != "${RUNNER_TEMP}/.venv/bin/${TOOL}" ]; then
+                echo "${TOOL} is '$(command -v "${TOOL}")', expected '${RUNNER_TEMP}/.venv/bin/${TOOL}'"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "python3.14, pip, cmake and conan come from the virtualenv"
+
       # Both eMudhra checks expect the error for a root missing from the bundle,
       # so an unreachable host or any other certificate problem (e.g. an expired
       # demo certificate) doesn't pass as distrusted.
@@ -140,6 +154,21 @@ jobs:
           done
           [ "${STATUS}" -eq 0 ] || exit 1
           echo "certifi distrusts the compromised roots"
+
+      - name: Verify pip's vendored certifi distrusts compromised eMudhra roots (macOS)
+        if: ${{ runner.os == 'macOS' }}
+        shell: bash
+        run: |
+          STATUS=0
+          for HOST in dv-g3b-emudhra.we-have-a-problem.com dv-g3b-aaa-emudhra.we-have-a-problem.com; do
+            OUT="$(python3.14 -I -c 'import sys; from pip._vendor import requests; requests.get(sys.argv[1])' "https://${HOST}/" 2>&1 || true)"
+            if ! grep -q "unable to get local issuer certificate" <<<"${OUT}"; then
+                echo "pip's vendored requests (certifi) to ${HOST} did not fail with 'unable to get local issuer certificate'"
+                STATUS=1
+            fi
+          done
+          [ "${STATUS}" -eq 0 ] || exit 1
+          echo "pip's vendored certifi distrusts the compromised roots"
 
       - name: Verify Rust tools are able to run
         if: ${{ matrix.os != 'ubuntu-latest' }}
