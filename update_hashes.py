@@ -16,17 +16,24 @@ Usage:
     python3 update_hashes.py /path/to/directory
 
 The positional argument is the directory that is scanned recursively for `*.yml`
-files. Latest commit hashes are resolved from this repository (the one holding
-this script), so run it from an up-to-date checkout of XRPLF/actions.
+and `*.yaml` files. Latest commit hashes are resolved from this repository (the
+one holding this script), so run it from an up-to-date checkout of XRPLF/actions.
 """
 
 import argparse
 import re
 import subprocess
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 ACTIONS_REPO_PATH = Path(__file__).resolve().parent
+
+# GitHub accepts both extensions for workflow files and for action metadata
+# (`action.yml` / `action.yaml`). Matching uses `Path.rglob`, so case sensitivity
+# follows the platform, as before: `*.YML` / `*.YAML` files are not scanned on
+# POSIX systems, while Windows matches case-insensitively.
+YAML_FILE_PATTERNS = ("*.yml", "*.yaml")
 
 
 def get_latest_commit_for_path(repo_path: Path, target_path: str) -> str:
@@ -85,11 +92,17 @@ def find_action_references(file_path: Path) -> set[ActionReference]:
     }
 
 
+def find_yaml_files(directory: Path) -> Iterator[Path]:
+    """Yield the `*.yml` files under ``directory``, then the `*.yaml` files."""
+    for pattern in YAML_FILE_PATTERNS:
+        yield from directory.rglob(pattern)
+
+
 def collect_all_references(
     directory: Path,
 ) -> dict[Path, set[ActionReference]]:
     all_references: dict[Path, set[ActionReference]] = {}
-    for yaml_file in directory.rglob("*.yml"):
+    for yaml_file in find_yaml_files(directory):
         if references := find_action_references(yaml_file):
             print(f"Found {len(references)} reference(s) in {yaml_file}:")
             for ref in sorted(references, key=lambda r: r.full_match):
