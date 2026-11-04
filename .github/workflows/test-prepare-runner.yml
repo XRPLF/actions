@@ -102,6 +102,8 @@ jobs:
           if [[ "${{ matrix.os }}" == "macos-26-apple-clang-21" ]]; then
               colima --version
               docker --version
+              # Keg-only, so not on PATH.
+              "$(brew --prefix binutils)/bin/gar" --version
           fi
 
       - name: Verify Python tools come from the virtualenv (macOS)

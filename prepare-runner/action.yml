@@ -29,6 +29,7 @@ runs:
       shell: bash
       run: |
         brew install --quiet \
+          binutils \
           ca-certificates \
           ccache \
           clang-build-analyzer \
