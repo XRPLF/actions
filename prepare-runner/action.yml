@@ -29,6 +29,7 @@ runs:
       shell: bash
       run: |
         brew install --quiet \
+          binutils \
           ca-certificates \
           ccache \
           clang-build-analyzer \
@@ -48,13 +49,57 @@ runs:
       shell: bash
       run: brew list --version
 
+    # A virtualenv keeps the build tools out of Homebrew's Python.
+    # Being in RUNNER_TEMP, it is recreated for every job,
+    # and once on PATH, python3.15 and pip in the following steps refer to it.
+    - name: Create Python virtualenv (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        VENV="${RUNNER_TEMP}/.venv"
+        python3.15 -m venv "${VENV}"
+        echo "${VENV}/bin" >> "${GITHUB_PATH}"
+
+    # pip verifies against its vendored certifi (on top of the system store),
+    # not the installed certifi,
+    # so pip < 26.2.2 still trusts the compromised eMudhra roots.
+    # The virtualenv's pip comes from ensurepip, which may bundle an older one.
+    # Install the fixed wheel by URL and hash,
+    # as the old pip can't be trusted to fetch it
+    # (see https://discuss.python.org/t/information-for-python-users-regarding-emudhra-emsign-ca-certificate-security-incident/109576).
+    - name: Upgrade pip (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        python3.15 -m pip install \
+          "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+
     - name: Install build tools using pip (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        python3.15 -m pip install --break-system-packages \
+        python3.15 -m pip install \
+          "certifi>=2026.10.19" \
           cmake==4.4.4 \
           conan==2.33.0
+
+    # The system curl, git and python3 verify against /etc/ssl/cert.pem, which
+    # macOS doesn't update, so it still trusts the compromised eMudhra roots
+    # (see https://emudhra.we-have-a-problem.com/). Homebrew ships the current
+    # Mozilla list; not its etc/ bundle, which also pulls in keychain roots.
+    - name: Update system CA bundle from Homebrew (macOS)
+      if: ${{ runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        BUNDLE="$(brew --prefix ca-certificates)/share/ca-certificates/cacert.pem"
+        if cmp -s "${BUNDLE}" /etc/ssl/cert.pem; then
+          echo "/etc/ssl/cert.pem is already up to date"
+        elif sudo -n install -m 644 -o root -g wheel "${BUNDLE}" /etc/ssl/cert.pem; then
+          echo "Replaced /etc/ssl/cert.pem with ${BUNDLE}"
+        else
+          echo "::error::Passwordless sudo is unavailable, so /etc/ssl/cert.pem may still trust the compromised eMudhra roots"
+          exit 1
+        fi
 
     - name: Export Rust variables (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -90,9 +135,17 @@ runs:
 
     - name: Set up Python (Windows)
       if: ${{ runner.os == 'Windows' }}
-      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
         python-version: 3.15
+
+    - name: Upgrade pip (Windows)
+      if: ${{ runner.os == 'Windows' }}
+      shell: bash
+      run: |
+        python -m pip install \
+          "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+
     - name: Install build tools using pip (Windows)
       if: ${{ runner.os == 'Windows' }}
       shell: bash
