@@ -81,7 +81,7 @@ runs:
         python3.15 -m pip install \
           "certifi>=2026.10.19" \
           cmake==4.4.4 \
-          conan==2.33.0
+          conan==2.34.0
 
     # The system curl, git and python3 verify against /etc/ssl/cert.pem, which
     # macOS doesn't update, so it still trusts the compromised eMudhra roots
@@ -151,7 +151,7 @@ runs:
       shell: bash
       run: |
         pip install \
-          conan==2.33.0
+          conan==2.34.0
 
     - name: Install build tools using chocolatey (Windows)
       if: ${{ runner.os == 'Windows' }}
