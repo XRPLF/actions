@@ -38,9 +38,9 @@ jobs:
       matrix:
         distro:
           - name: debian
-            base_image: debian:bookworm
+            base_image: debian:trixie
           - name: rhel
-            base_image: registry.access.redhat.com/ubi9/ubi:latest
+            base_image: registry.access.redhat.com/ubi10/ubi:latest
     uses: ./.github/workflows/build-multiarch-image.yml
     with:
       image_name: actions/actions-test-${{ matrix.distro.name }}
