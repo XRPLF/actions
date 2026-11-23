@@ -60,6 +60,18 @@ jobs:
         run: |
           echo "arch=${PLATFORM##*/}" >>$GITHUB_OUTPUT
 
+      # ThreadSanitizer binaries that run during the image build stop when the
+      # ASLR entropy of the kernel gives them an incompatible memory layout, and
+      # the BuildKit sandbox does not let them disable ASLR. The setting is
+      # global to the kernel, thus it also applies inside the build.
+      - name: Decrease ASLR entropy
+        if: ${{ runner.arch == 'X64' }}
+        env:
+          MMAP_RND_BITS: 28
+        run: |
+          echo "Initial value: $(sysctl -n vm.mmap_rnd_bits)"
+          sudo sysctl -w "vm.mmap_rnd_bits=${MMAP_RND_BITS}"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
