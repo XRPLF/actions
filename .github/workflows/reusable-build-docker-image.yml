@@ -69,7 +69,7 @@ jobs:
         env:
           MMAP_RND_BITS: 28
         run: |
-          echo "Initial value: $(sysctl -n vm.mmap_rnd_bits)"
+          echo "Initial value: $(sudo sysctl -n vm.mmap_rnd_bits)"
           sudo sysctl -w "vm.mmap_rnd_bits=${MMAP_RND_BITS}"
 
       - name: Set up Docker Buildx
