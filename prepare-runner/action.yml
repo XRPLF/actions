@@ -37,7 +37,7 @@ runs:
           coreutils \
           docker \
           ninja \
-          python@3.14
+          python@3.15
 
     - name: Cleanup Homebrew (macOS)
       if: ${{ runner.os == 'macOS' }}
@@ -51,13 +51,13 @@ runs:
 
     # A virtualenv keeps the build tools out of Homebrew's Python.
     # Being in RUNNER_TEMP, it is recreated for every job,
-    # and once on PATH, python3.14 and pip in the following steps refer to it.
+    # and once on PATH, python3.15 and pip in the following steps refer to it.
     - name: Create Python virtualenv (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
         VENV="${RUNNER_TEMP}/.venv"
-        python3.14 -m venv "${VENV}"
+        python3.15 -m venv "${VENV}"
         echo "${VENV}/bin" >> "${GITHUB_PATH}"
 
     # pip verifies against its vendored certifi (on top of the system store),
@@ -71,17 +71,17 @@ runs:
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        python3.14 -m pip install \
+        python3.15 -m pip install \
           "pip @ https://files.pythonhosted.org/packages/3f/06/3e4420302363fbb71be3c7f35ce042f54bfca330e3e66b3a2e3c4cca579f/pip-26.2.2-py3-none-any.whl#sha256=fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
 
     - name: Install build tools using pip (macOS)
       if: ${{ runner.os == 'macOS' }}
       shell: bash
       run: |
-        python3.14 -m pip install \
+        python3.15 -m pip install \
           "certifi>=2026.10.19" \
-          cmake==4.3.4 \
-          conan==2.29.1
+          cmake==4.4.4 \
+          conan==2.34.0
 
     # The system curl, git and python3 verify against /etc/ssl/cert.pem, which
     # macOS doesn't update, so it still trusts the compromised eMudhra roots
@@ -137,7 +137,7 @@ runs:
       if: ${{ runner.os == 'Windows' }}
       uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
       with:
-        python-version: 3.13
+        python-version: 3.15
 
     - name: Upgrade pip (Windows)
       if: ${{ runner.os == 'Windows' }}
@@ -151,7 +151,7 @@ runs:
       shell: bash
       run: |
         pip install \
-          conan==2.24.0
+          conan==2.34.0
 
     - name: Install build tools using chocolatey (Windows)
       if: ${{ runner.os == 'Windows' }}
@@ -175,7 +175,7 @@ runs:
         # Download rustup-init.exe directly (the sh.rustup.rs wrapper auto-detects
         # --default-host as gnu in bash, causing a duplicate-flag error if we override it)
         curl --proto '=https' --tlsv1.2 -sSf -o rustup-init.exe https://win.rustup.rs/x86_64
-        ./rustup-init.exe -y --default-toolchain=1.91.1 --default-host=x86_64-pc-windows-msvc
+        ./rustup-init.exe -y --default-toolchain=1.99.1 --default-host=x86_64-pc-windows-msvc
         rm -f rustup-init.exe
 
     - name: Install cargo tools (macOS and Windows)
