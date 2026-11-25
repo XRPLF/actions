@@ -13,6 +13,12 @@ on:
         required: true
         type: string
 
+      setup_command:
+        description: "Shell command to run before the hooks, for example to install the tools that local hooks call (leave empty to skip)"
+        required: false
+        type: string
+        default: ""
+
 jobs:
   run-hooks:
     runs-on: ${{ inputs.runs_on }}
@@ -34,6 +40,15 @@ jobs:
         uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: false
+
+      # The command is passed through the environment, not expanded into the
+      # script, so that its text cannot change the step.
+      - name: Run setup command 🔧
+        if: ${{ inputs.setup_command != '' }}
+        shell: bash
+        env:
+          SETUP_COMMAND: ${{ inputs.setup_command }}
+        run: bash -e -o pipefail -c "${SETUP_COMMAND}"
 
       - name: Run pre-commit ✅
         env:

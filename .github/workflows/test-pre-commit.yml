@@ -12,3 +12,11 @@ jobs:
     with:
       runs_on: ubuntu-latest
       container: '{ "image": "ghcr.io/xrplf/xrpld/pre-commit:latest" }'
+
+  test-pre-commit-setup-command:
+    uses: ./.github/workflows/pre-commit.yml
+    with:
+      runs_on: ubuntu-latest
+      container: '{ "image": "ghcr.io/xrplf/xrpld/pre-commit:latest" }'
+      # Fails unless the command runs in bash, in the checked-out repo.
+      setup_command: test -f .pre-commit-config.yaml && [[ "$(echo ok)" == ok ]]

@@ -25,7 +25,7 @@ Reusable workflows and actions for XRPLF repos
 - `check-pr-commits.yml`: Checks the commits in Pull Requests are signed.
 - `check-pr-title.yml`: Checks the title of Pull Requests against a specified pattern.
 - `determine-tidy-files.yml`: Determines which files have been modified in a Pull Request and sets an output variables with the list of those files.
-- `pre-commit.yml`: Runs `pre-commit` checks on code changes.
+- `pre-commit.yml`: Runs `pre-commit` checks on code changes. The optional `setup_command` input runs a shell command before the hooks, for example to install the tools that local hooks call.
 - `pre-commit-autoupdate.yml`: Runs `pre-commit autoupdate` to update pre-commit hooks.
 - `sync-branches-tags.yml`: Synchronizes branches and tags between two repositories.
 
