@@ -1,0 +1,23 @@
+name: Check PR description
+description: Check that the pull request description is not empty and differs from the pull request template
+
+inputs:
+  template_file:
+    description: Path to the pull request template, relative to the workspace
+    required: false
+    default: .github/pull_request_template.md
+
+runs:
+  using: composite
+  steps:
+    - name: Check PR description differs from template
+      shell: bash
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
+        TEMPLATE_FILE: ${{ inputs.template_file }}
+      run: |
+        body_file="$(mktemp)"
+        printenv PR_BODY >"${body_file}"
+        python3 "${GITHUB_ACTION_PATH}/check-pr-description.py" \
+            --template-file "${TEMPLATE_FILE}" \
+            --pr-body-file "${body_file}"
