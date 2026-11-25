@@ -1,0 +1,58 @@
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/test-check-pr-description.yml"
+      - "check-pr-description/**"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/test-check-pr-description.yml"
+      - "check-pr-description/**"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  test-check-pr-description:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s check-pr-description -v
+
+      - name: Write a test template
+        run: |
+          mkdir -p "${RUNNER_TEMP}/template"
+          printf '## Summary\n<!-- Describe the change. -->\n' >"${RUNNER_TEMP}/template/pull_request_template.md"
+
+      # On pull_request the event has a body; on push and workflow_dispatch it
+      # does not, so the check must fail there.
+      - name: Run check-pr-description action
+        id: check
+        continue-on-error: true
+        uses: ./check-pr-description
+        with:
+          template_file: ${{ runner.temp }}/template/pull_request_template.md
+
+      - name: Confirm the action result
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          OUTCOME: ${{ steps.check.outcome }}
+        run: |
+          if [[ "${EVENT_NAME}" == "pull_request" && -n "${PR_BODY//[[:space:]]/}" ]]; then
+              expected=success
+          else
+              expected=failure
+          fi
+          test "${OUTCOME}" = "${expected}"
