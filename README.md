@@ -51,4 +51,11 @@ python3 update_hashes.py --dry-run /path/to/directory
 **Arguments:**
 
 - `--dry-run`: Show what would be updated without making changes (optional)
-- Path to the git directory (positional argument)
+- Path to the git directory (positional argument), scanned recursively for `.yml` and `.yaml` files
+
+**Tests:**
+
+```bash
+# Offline unit tests (standard library only, `git` is stubbed)
+python3 -m unittest -v test_update_hashes
+```
