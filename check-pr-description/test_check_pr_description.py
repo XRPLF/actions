@@ -1,12 +1,10 @@
-"""Tests for check-pr-description.py. Run: python3 -m unittest discover -s check-pr-description"""
+"""Tests for check-pr-description.py. Run: pytest check-pr-description"""
 
-import contextlib
 import importlib.util
-import io
 import sys
-import tempfile
-import unittest
 from pathlib import Path
+
+import pytest
 
 SCRIPT = Path(__file__).with_name("check-pr-description.py")
 spec = importlib.util.spec_from_file_location("check_pr_description", SCRIPT)
@@ -16,66 +14,60 @@ spec.loader.exec_module(check)
 TEMPLATE = "## Summary\n<!-- Describe the change. -->\n\n## Test Plan\n"
 
 
-def run(body: str) -> tuple[int, str]:
-    with tempfile.TemporaryDirectory() as tmp:
-        template_file = Path(tmp, "template.md")
-        body_file = Path(tmp, "body.md")
+@pytest.fixture
+def run(tmp_path, monkeypatch, capsys):
+    def _run(body: str) -> tuple[int, str]:
+        template_file = tmp_path / "template.md"
+        body_file = tmp_path / "body.md"
         template_file.write_text(TEMPLATE, encoding="utf-8")
         body_file.write_text(body, encoding="utf-8")
-        argv = [
-            str(SCRIPT),
-            "--template-file",
-            str(template_file),
-            "--pr-body-file",
-            str(body_file),
-        ]
-        out = io.StringIO()
-        old_argv = sys.argv
-        sys.argv = argv
-        try:
-            with contextlib.redirect_stdout(out):
-                rc = check.main()
-        finally:
-            sys.argv = old_argv
-        return rc, out.getvalue()
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                str(SCRIPT),
+                "--template-file",
+                str(template_file),
+                "--pr-body-file",
+                str(body_file),
+            ],
+        )
+        rc = check.main()
+        return rc, capsys.readouterr().out
+
+    return _run
 
 
-class CheckPrDescriptionTest(unittest.TestCase):
-    def test_customized_body_passes(self):
-        rc, _ = run("## Summary\nFix a bug.\n\n## Test Plan\nRan tests.\n")
-        self.assertEqual(rc, 0)
+def test_customized_body_passes(run):
+    rc, _ = run("## Summary\nFix a bug.\n\n## Test Plan\nRan tests.\n")
+    assert rc == 0
 
-    def test_empty_body_fails(self):
-        rc, _ = run("  \n")
-        self.assertEqual(rc, 1)
 
-    def test_template_body_fails(self):
-        rc, _ = run(TEMPLATE)
-        self.assertEqual(rc, 1)
+@pytest.mark.parametrize(
+    "body",
+    [
+        pytest.param("  \n", id="empty"),
+        pytest.param(TEMPLATE, id="template"),
+        pytest.param("<!-- nothing here -->\n", id="comment-only"),
+        pytest.param(TEMPLATE + "<!-- unclosed\nFix a bug.\n", id="unclosed-comment"),
+        pytest.param(
+            TEMPLATE.replace("## Test Plan", "##   Test   Plan"), id="whitespace-only"
+        ),
+    ],
+)
+def test_uncustomized_body_fails(run, body):
+    rc, _ = run(body)
+    assert rc == 1
 
-    def test_comment_only_body_fails(self):
-        rc, _ = run("<!-- nothing here -->\n")
-        self.assertEqual(rc, 1)
 
-    def test_echoed_body_cannot_issue_workflow_commands(self):
-        rc, out = run(TEMPLATE + "<!--\n::warning::injected\n-->\n")
-        self.assertEqual(rc, 1)
-        lines = out.splitlines()
-        start = next(i for i, l in enumerate(lines) if l.startswith("::stop-commands::"))
-        token = lines[start].removeprefix("::stop-commands::")
-        self.assertTrue(token)
-        end = lines.index(f"::{token}::")
-        for line in lines[:start] + lines[end + 1 :]:
-            self.assertNotIn("Visible", line)
-        self.assertTrue(any("## Summary" in l for l in lines[start:end]))
-
-    def test_unclosed_comment_hides_rest_of_body(self):
-        rc, _ = run(TEMPLATE + "<!-- unclosed\nFix a bug.\n")
-        self.assertEqual(rc, 1)
-
-    def test_whitespace_only_edit_fails(self):
-        rc, _ = run(TEMPLATE.replace("## Test Plan", "##   Test   Plan"))
-        self.assertEqual(rc, 1)
-
-if __name__ == "__main__":
-    unittest.main()
+def test_echoed_body_cannot_issue_workflow_commands(run):
+    rc, out = run(TEMPLATE + "<!--\n::warning::injected\n-->\n")
+    assert rc == 1
+    lines = out.splitlines()
+    start = next(i for i, l in enumerate(lines) if l.startswith("::stop-commands::"))
+    token = lines[start].removeprefix("::stop-commands::")
+    assert token
+    end = lines.index(f"::{token}::")
+    for line in lines[:start] + lines[end + 1 :]:
+        assert "Visible" not in line
+    assert any("## Summary" in l for l in lines[start:end])

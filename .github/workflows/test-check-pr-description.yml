@@ -27,8 +27,16 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Install test dependencies
+        run: pip install --require-hashes -r check-pr-description/requirements-test.txt
+
       - name: Run unit tests
-        run: python3 -m unittest discover -s check-pr-description -v
+        run: pytest check-pr-description -v
 
       - name: Write a test template
         run: |

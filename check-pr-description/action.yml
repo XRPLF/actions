@@ -17,7 +17,7 @@ runs:
         TEMPLATE_FILE: ${{ inputs.template_file }}
       run: |
         body_file="$(mktemp)"
-        printenv PR_BODY >"${body_file}" || true
+        printenv PR_BODY >"${body_file}"
         python3 "${GITHUB_ACTION_PATH}/check-pr-description.py" \
             --template-file "${TEMPLATE_FILE}" \
             --pr-body-file "${body_file}"
